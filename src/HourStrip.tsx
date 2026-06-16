@@ -16,15 +16,15 @@ export function HourStrip({
 }) {
   const cells = hourStrip(tz, sourceDayStart, selectedInstant, hour12);
   return (
-    <div className="flex overflow-hidden rounded-md border border-slate-200">
+    <div className="flex overflow-hidden rounded-md ring-1 ring-slate-800">
       {cells.map((c, i) => (
         <button
           key={i}
           onClick={() => onPick(c.instant)}
           className={[
-            "relative h-12 flex-1 border-r border-white/50 text-center leading-tight transition",
+            "relative h-12 flex-1 border-r border-black/30 text-center leading-tight transition hover:brightness-125",
             BAND_BG[c.band],
-            c.selected ? "outline outline-2 -outline-offset-2 outline-rose-500 font-bold" : "",
+            c.selected ? "z-10 outline outline-2 -outline-offset-2 outline-emerald-300 font-bold" : "",
           ].join(" ")}
           title={c.dateLabel}
         >

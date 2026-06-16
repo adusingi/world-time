@@ -56,8 +56,8 @@ export function hourStrip(
 }
 
 export const BAND_BG: Record<Cell["band"], string> = {
-  night: "bg-slate-800 text-slate-300",
-  early: "bg-sky-100 text-sky-900",
-  day: "bg-amber-50 text-amber-900",
-  evening: "bg-sky-200 text-sky-900",
+  night: "bg-slate-900/70 text-slate-600",
+  early: "bg-emerald-950 text-emerald-300/80",
+  day: "bg-emerald-800/50 text-emerald-50",
+  evening: "bg-emerald-950 text-emerald-300/80",
 };
