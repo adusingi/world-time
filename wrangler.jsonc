@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "meeting-mobayilo",
+  "compatibility_date": "2026-06-16",
+  // Static Vite build output — this makes it a Cloudflare Pages project.
+  "pages_build_output_dir": "dist"
+}
