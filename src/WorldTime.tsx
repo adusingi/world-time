@@ -12,7 +12,7 @@ export function WorldTime() {
     <div className="min-h-screen bg-[#0a0f1c] text-slate-100">
       <div className="grid lg:grid-cols-2">
         {/* left: globe — fixed-height band on mobile, sticky full-height on desktop */}
-        <div className="h-[40vh] border-b border-slate-800/60 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+        <div className="h-[40vh] lg:sticky lg:top-0 lg:h-screen">
           <GlobeView conv={conv} />
         </div>
 

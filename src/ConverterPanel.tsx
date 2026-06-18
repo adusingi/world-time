@@ -18,7 +18,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
   const recent = targets.slice(-2);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-10 text-slate-100">
+    <div className="w-full px-6 py-10 text-slate-100">
       {/* hero source */}
       <div className="mb-12 text-center">
         {/* live indicator / resume button */}
