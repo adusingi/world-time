@@ -65,7 +65,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
                 : "h-2 w-2 rounded-full bg-muted-soft"
             }
           />
-          {conv.live ? "Live" : "Now"}
+          Now
         </button>
 
         <div className="flex items-center justify-center">
