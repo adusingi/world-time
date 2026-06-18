@@ -12,6 +12,7 @@ import {
   zonedWallToInstant,
   type Formatted,
 } from "./timezone.ts";
+import { detectSource } from "./detectSource.ts";
 
 export type Row = {
   city: City;
@@ -46,7 +47,9 @@ function nowInZone(tz: string): { date: string; time: string } {
 const STORE_KEY = "world-time:v2";
 type Persisted = { source: City; targets: City[]; hour12: boolean };
 
-function loadPersisted(): Persisted {
+// `stored` is false on a first-ever visit (nothing saved yet) — the signal to
+// auto-detect the source city instead of defaulting to Okayama.
+function loadPersisted(): Persisted & { stored: boolean } {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
@@ -57,12 +60,13 @@ function loadPersisted(): Persisted {
         source,
         targets,
         hour12: typeof p.hour12 === "boolean" ? p.hour12 : false,
+        stored: isCity(p.source),
       };
     }
   } catch {
     /* ignore corrupt storage */
   }
-  return { source: DEFAULT_SOURCE, targets: DEFAULT_TARGETS, hour12: false };
+  return { source: DEFAULT_SOURCE, targets: DEFAULT_TARGETS, hour12: false, stored: false };
 }
 
 export function useConverter() {
@@ -79,14 +83,39 @@ export function useConverter() {
   // Any manual edit (typing a time, picking an instant) pins it. "Now" resumes.
   const [live, setLive] = useState(true);
 
+  // On a first-ever visit, detect the visitor's city and use it as the source
+  // (capital of their country, then Okayama, as fallbacks). We hold off writing
+  // to localStorage until detection settles, so the transient Okayama default
+  // isn't persisted (which would suppress detection on the next visit).
+  const [persistReady, setPersistReady] = useState(persisted.stored);
   useEffect(() => {
+    if (persisted.stored) return;
+    let alive = true;
+    detectSource()
+      .then((city) => {
+        if (!alive || !city) return;
+        const key = cityKey(city);
+        setSource(city);
+        setTargets((prev) => prev.filter((t) => cityKey(t) !== key));
+      })
+      .finally(() => {
+        if (alive) setPersistReady(true);
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!persistReady) return;
     const data: Persisted = { source, targets, hour12 };
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(data));
     } catch {
       /* ignore quota/private-mode errors */
     }
-  }, [source, targets, hour12]);
+  }, [source, targets, hour12, persistReady]);
 
   // While live, advance the source time to "now" in the source city. We poll
   // each second but setState bails out unless the minute string changes, so
