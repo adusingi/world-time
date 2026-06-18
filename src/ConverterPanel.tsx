@@ -141,9 +141,19 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
                   onPick={conv.pickInstant}
                 />
               </div>
-              <div className="w-24 shrink-0 text-left text-xs text-slate-400">
-                {r.city.city}
-                {r.isSource && <span className="ml-1 text-emerald-400">●</span>}
+              <div className="group flex w-28 shrink-0 items-center gap-1 text-left text-xs text-slate-400">
+                <span className="truncate">{r.city.city}</span>
+                {r.isSource ? (
+                  <span className="text-emerald-400">●</span>
+                ) : (
+                  <button
+                    onClick={() => conv.removeTarget(cityKey(r.city))}
+                    title={`Remove ${r.city.city}`}
+                    className="text-slate-600 opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
             </div>
           ))}
