@@ -76,10 +76,10 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
               className="absolute top-0 flex flex-col items-start"
               style={{ left: pct(h) }}
             >
-              <span className="font-mono-slab text-[10px] text-slate-600">
+              <span className="font-mono-slab text-[10px] text-muted-soft">
                 {String(h).padStart(2, "0")}
               </span>
-              <span className="mt-1 h-1.5 w-px bg-slate-700" />
+              <span className="mt-1 h-1.5 w-px bg-line" />
             </div>
           ))}
         </div>
@@ -93,21 +93,21 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
           return (
             <div key={r.city.id} className="group flex items-center">
               <div className="flex w-36 shrink-0 items-center gap-1.5 pr-3">
-                <span className="truncate text-sm text-slate-300">{r.city.city}</span>
+                <span className="truncate text-sm text-fg">{r.city.city}</span>
                 {r.isSource ? (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                 ) : (
                   <button
                     onClick={() => conv.removeTarget(cityKey(r.city))}
                     title={`Remove ${r.city.city}`}
-                    className="shrink-0 text-slate-600 opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
+                    className="shrink-0 text-muted-soft opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
                   >
                     ✕
                   </button>
                 )}
               </div>
 
-              <div className="relative h-9 flex-1 overflow-hidden rounded-md bg-slate-900/40">
+              <div className="relative h-9 flex-1 overflow-hidden rounded-md bg-panel-soft">
                 {/* clickable hour cells + faint gridlines */}
                 <div className="absolute inset-0 flex">
                   {Array.from({ length: 24 }, (_, h) => (
@@ -115,8 +115,8 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
                       key={h}
                       onClick={() => pick(h)}
                       title={`${String(h).padStart(2, "0")}:00`}
-                      className={`h-full flex-1 transition hover:bg-white/5 ${
-                        h % 3 === 0 ? "border-l border-white/[0.06]" : ""
+                      className={`h-full flex-1 transition hover:bg-fg/5 ${
+                        h % 3 === 0 ? "border-l border-fg/10" : ""
                       }`}
                     />
                   ))}
@@ -125,13 +125,13 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
                 {bands.map(([s, e], i) => (
                   <div
                     key={i}
-                    className="pointer-events-none absolute inset-y-1 rounded bg-emerald-700/30 ring-1 ring-inset ring-emerald-500/20"
+                    className="pointer-events-none absolute inset-y-1 rounded bg-accent/25 ring-1 ring-inset ring-accent/30"
                     style={{ left: pct(s), width: pct(e - s) }}
                   />
                 ))}
               </div>
 
-              <div className="w-16 shrink-0 text-right font-mono-slab text-xs leading-tight text-slate-400">
+              <div className="w-16 shrink-0 text-right font-mono-slab text-xs leading-tight text-muted">
                 <div>{r.fmt.time}</div>
                 {!r.isSource && r.fmt.date !== sourceDate && (
                   <div className="text-[10px] text-amber-400/80">{r.fmt.date}</div>
@@ -146,7 +146,7 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
       <div className="pointer-events-none absolute bottom-0 left-36 right-16 top-0">
         {/* faint highlight column around now */}
         <div
-          className="absolute inset-y-0 bg-white/[0.03]"
+          className="absolute inset-y-0 bg-fg/[0.04]"
           style={{ left: `calc(${nowFrac * 100}% - 0.6rem)`, width: "1.2rem" }}
         />
         {/* now line (orange, glowing) */}
@@ -156,26 +156,26 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
         >
           <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-sm bg-orange-400" />
         </div>
-        {/* planned line (emerald, dashed) — only when a time is pinned */}
+        {/* planned line (accent, dashed) — only when a time is pinned */}
         {!conv.live && (
           <div
-            className="absolute inset-y-0 border-l border-dashed border-emerald-400/80"
+            className="absolute inset-y-0 border-l border-dashed border-accent"
             style={{ left: `${plannedFrac * 100}%` }}
           />
         )}
       </div>
 
       {/* legend */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-soft">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
             <span className="h-3 w-0.5 bg-orange-400" /> Now
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-4 border-t border-dashed border-emerald-400" /> Planned
+            <span className="w-4 border-t border-dashed border-accent" /> Planned
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-emerald-700/40 ring-1 ring-inset ring-emerald-500/20" />{" "}
+            <span className="h-3 w-3 rounded-sm bg-accent/30 ring-1 ring-inset ring-accent/30" />{" "}
             Work hours
           </span>
         </div>

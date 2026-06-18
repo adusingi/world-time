@@ -4,9 +4,23 @@ import * as THREE from "three";
 import type { Converter } from "./useConverter.ts";
 import { signed } from "./timezone.ts";
 
-// Teal accent used for arcs / city markers — matches the reference globe.
-const ACCENT = "#34e6d4";
 const SOURCE_ACCENT = "#fbbf24"; // amber, so the hub city stands out
+const FALLBACK_ACCENT = "#34d399";
+
+// The active theme's accent colour (CSS var --accent), re-read whenever the
+// theme changes, so the arcs / atmosphere / labels follow the chosen theme.
+function useThemeAccent(): string {
+  const read = () =>
+    getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() ||
+    FALLBACK_ACCENT;
+  const [accent, setAccent] = useState(read);
+  useEffect(() => {
+    const obs = new MutationObserver(() => setAccent(read()));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => obs.disconnect();
+  }, []);
+  return accent;
+}
 
 type Arc = {
   startLat: number;
@@ -59,6 +73,7 @@ export function GlobeView({ conv }: { conv: Converter }) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const { ref, width, height } = useElementSize();
   const [countries, setCountries] = useState<object[]>([]);
+  const accent = useThemeAccent();
 
   const source = conv.source;
 
@@ -131,8 +146,7 @@ export function GlobeView({ conv }: { conv: Converter }) {
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "radial-gradient(circle at 50% 45%, rgba(52,230,212,0.10), transparent 60%)",
+          background: `radial-gradient(circle at 50% 45%, color-mix(in srgb, ${accent} 12%, transparent), transparent 60%)`,
         }}
       />
       {width > 0 && height > 0 && (
@@ -142,19 +156,19 @@ export function GlobeView({ conv }: { conv: Converter }) {
           height={height}
           backgroundColor="rgba(0,0,0,0)"
           globeMaterial={darkGlobeMaterial()}
-          atmosphereColor={ACCENT}
+          atmosphereColor={accent}
           atmosphereAltitude={0.18}
           showGraticules
           // faint country landmasses
           polygonsData={countries}
-          polygonCapColor={() => "rgba(52,230,212,0.05)"}
+          polygonCapColor={() => "rgba(148,163,184,0.05)"}
           polygonSideColor={() => "rgba(0,0,0,0)"}
-          polygonStrokeColor={() => "rgba(96,165,250,0.18)"}
+          polygonStrokeColor={() => "rgba(148,163,184,0.18)"}
           polygonAltitude={0.006}
           // glowing great-circle arcs from source -> targets
           arcsData={arcs}
           arcLabel={(d: object) => (d as Arc).label}
-          arcColor={() => ACCENT}
+          arcColor={() => accent}
           arcStroke={0.5}
           arcAltitudeAutoScale={0.4}
           arcDashLength={0.45}
@@ -166,7 +180,7 @@ export function GlobeView({ conv }: { conv: Converter }) {
           labelLng={(d: object) => (d as Label).lng}
           labelText={(d: object) => (d as Label).text}
           labelColor={(d: object) =>
-            (d as Label).isSource ? SOURCE_ACCENT : ACCENT
+            (d as Label).isSource ? SOURCE_ACCENT : accent
           }
           labelDotRadius={(d: object) => ((d as Label).isSource ? 0.5 : 0.32)}
           labelSize={(d: object) => ((d as Label).isSource ? 1.1 : 0.85)}

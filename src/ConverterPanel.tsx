@@ -49,20 +49,20 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
   const [adding, setAdding] = useState(false);
 
   return (
-    <div className="w-full px-6 py-10 text-slate-100">
+    <div className="w-full px-6 py-10 text-fg">
       {/* hero */}
       <div className="mb-10 text-center">
         <button
           onClick={conv.goLive}
           disabled={conv.live}
-          className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-300 transition enabled:hover:text-emerald-300"
+          className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-muted transition enabled:hover:text-accent-strong"
           title={conv.live ? "Following the current time" : "Snap back to now"}
         >
           <span
             className={
               conv.live
-                ? "h-2 w-2 rounded-full bg-emerald-400"
-                : "h-2 w-2 rounded-full bg-slate-500"
+                ? "h-2 w-2 rounded-full bg-accent"
+                : "h-2 w-2 rounded-full bg-muted-soft"
             }
           />
           {conv.live ? "Live" : "Now"}
@@ -73,15 +73,15 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
             type="time"
             value={conv.time}
             onChange={(e) => conv.setTime(e.target.value)}
-            className="hero-time font-mono-slab bg-transparent text-center text-7xl font-bold tracking-tight text-white focus:outline-none"
+            className="hero-time font-mono-slab bg-transparent text-center text-7xl font-bold tracking-tight text-fg focus:outline-none"
           />
         </div>
 
-        <div className="mt-2 text-slate-400">
+        <div className="mt-2 text-muted">
           {source.city.city} · {source.fmt.weekday}, {source.fmt.date}
         </div>
         {weather && (
-          <div className="mt-1 text-sm text-slate-500">
+          <div className="mt-1 text-sm text-muted-soft">
             {cap(weather.label)} · {weather.temp}°
           </div>
         )}
@@ -97,7 +97,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
             />
           </div>
           <div className="relative">
-            <div className="font-mono-slab rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-slate-200">
+            <div className="font-mono-slab rounded-lg border border-line bg-panel px-3 py-2 text-fg">
               {fmtDate(conv.date)}
             </div>
             <input
@@ -110,7 +110,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
           </div>
           <button
             onClick={() => conv.setHour12(!conv.hour12)}
-            className="rounded-lg bg-emerald-400 px-3 py-2 font-medium text-slate-900 transition hover:bg-emerald-300"
+            className="rounded-lg bg-accent px-3 py-2 font-medium text-bg transition hover:bg-accent-strong"
             title="Toggle 12/24-hour"
           >
             {conv.hour12 ? "12h" : "24h"}
@@ -121,12 +121,12 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
       {/* best overlap suggestion */}
       <button
         onClick={() => conv.pickInstant(new Date(conv.sourceDayStart.getTime() + overlap.hour * 3_600_000))}
-        className="mb-8 flex w-full items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-3.5 text-left text-sm text-slate-300 transition hover:border-emerald-500/40"
+        className="mb-8 flex w-full items-center gap-2 rounded-2xl border border-line bg-panel-soft px-5 py-3.5 text-left text-sm text-muted transition hover:border-line-strong"
       >
-        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+        <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
         <span>
           Best overlap{" "}
-          <span className="font-mono-slab text-emerald-300">
+          <span className="font-mono-slab text-accent-strong">
             {pad(overlap.hour)}:00–{pad((overlap.hour + 1) % 24)}:00
           </span>{" "}
           — {overlap.count} of {conv.rows.length} cities in working hours
@@ -153,13 +153,13 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-700 text-2xl leading-none text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-line text-2xl leading-none text-accent-strong transition hover:border-accent hover:text-accent"
             title="Add a city"
           >
             +
           </button>
         )}
-        <span className="text-xs text-slate-500">Add city</span>
+        <span className="text-xs text-muted-soft">Add city</span>
       </div>
     </div>
   );

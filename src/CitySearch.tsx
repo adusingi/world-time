@@ -82,10 +82,10 @@ export function CitySearch({
   }
 
   const field = dark
-    ? "bg-slate-700 text-slate-100 placeholder-slate-400 border-slate-600"
+    ? "bg-panel text-fg placeholder-muted-soft border-line"
     : "bg-white text-slate-800 placeholder-slate-400 border-slate-300";
   const menu = dark
-    ? "bg-slate-700 text-slate-100 border-slate-600"
+    ? "bg-panel text-fg border-line"
     : "bg-white text-slate-800 border-slate-200";
 
   return (
@@ -125,7 +125,7 @@ export function CitySearch({
                 onMouseEnter={() => setActive(i)}
                 onClick={() => choose(c)}
                 className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-sm ${
-                  i === active ? (dark ? "bg-slate-600" : "bg-slate-100") : ""
+                  i === active ? (dark ? "bg-accent/15" : "bg-slate-100") : ""
                 }`}
               >
                 <span className="font-medium">{c.city}</span>
