@@ -6,23 +6,6 @@ import { cityKey } from "./cities.ts";
 import { useWeather } from "./useWeather.ts";
 import type { Converter } from "./useConverter.ts";
 
-// Small inline clock glyph next to the hero time.
-function ClockIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      className="h-7 w-7 text-slate-500"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 // Right column: the converter UI. Big editable source time as a hero, target
 // cities as a card grid, and a full-width timeline. State lives in `conv`
 // (shared with the globe) so the two halves stay in lock-step.
@@ -54,14 +37,13 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
         </button>
 
         {/* big editable time */}
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center">
           <input
             type="time"
             value={conv.time}
             onChange={(e) => conv.setTime(e.target.value)}
             className="hero-time bg-transparent text-center text-7xl font-bold tracking-tight text-white focus:outline-none"
           />
-          <ClockIcon />
         </div>
 
         <div className="mt-3 text-slate-400">
