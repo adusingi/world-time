@@ -159,7 +159,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
             +
           </button>
         )}
-        <span className="text-xs text-muted-soft">Add city</span>
+        <span className="text-xs font-medium text-accent">Add city</span>
       </div>
     </div>
   );

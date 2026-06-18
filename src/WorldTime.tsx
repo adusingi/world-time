@@ -13,18 +13,21 @@ export function WorldTime() {
   return (
     <div className="min-h-screen text-fg">
       <div className="grid lg:grid-cols-2">
-        {/* left: globe — fixed-height band on mobile, sticky full-height on desktop */}
-        <div className="h-[40vh] lg:sticky lg:top-0 lg:h-screen">
-          <GlobeView conv={conv} />
-        </div>
-
-        {/* right: converter panel + footer; footer pinned to the bottom so it
-            stays visible even when the converter content is short */}
-        <div className="flex min-h-screen min-w-0 flex-col">
-          <ConverterPanel conv={conv} />
-          <div className="mt-auto px-6 pb-4">
+        {/* left: globe + footer. The column is sticky/full-height on desktop, so
+            pinning the footer here keeps it visible no matter how long the
+            converter (right) column grows with more cities. */}
+        <div className="flex h-[40vh] flex-col lg:sticky lg:top-0 lg:h-screen">
+          <div className="min-h-0 flex-1">
+            <GlobeView conv={conv} />
+          </div>
+          <div className="shrink-0 px-6 pb-4">
             <Footer />
           </div>
+        </div>
+
+        {/* right: converter panel (scrolls) */}
+        <div className="min-w-0">
+          <ConverterPanel conv={conv} />
         </div>
       </div>
     </div>
