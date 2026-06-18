@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import * as THREE from "three";
 import type { Converter } from "./useConverter.ts";
+import { signed } from "./timezone.ts";
 
 // Teal accent used for arcs / city markers — matches the reference globe.
 const ACCENT = "#34e6d4";
@@ -12,6 +13,7 @@ type Arc = {
   startLng: number;
   endLat: number;
   endLng: number;
+  label: string; // hover tooltip, e.g. "Okayama → Paris · +7h"
 };
 
 type Label = {
@@ -69,8 +71,9 @@ export function GlobeView({ conv }: { conv: Converter }) {
           startLng: source.lng,
           endLat: r.city.lat,
           endLng: r.city.lng,
+          label: `${source.city} → ${r.city.city} · ${signed(r.diff)}h`,
         })),
-    [conv.rows, source.lat, source.lng],
+    [conv.rows, source.lat, source.lng, source.city],
   );
 
   const labels: Label[] = useMemo(
@@ -78,7 +81,8 @@ export function GlobeView({ conv }: { conv: Converter }) {
       conv.rows.map((r) => ({
         lat: r.city.lat,
         lng: r.city.lng,
-        text: r.city.city,
+        // target cities carry their offset from the source, e.g. "Paris +7h"
+        text: r.isSource ? r.city.city : `${r.city.city}  ${signed(r.diff)}h`,
         isSource: r.isSource,
       })),
     [conv.rows],
@@ -149,6 +153,7 @@ export function GlobeView({ conv }: { conv: Converter }) {
           polygonAltitude={0.006}
           // glowing great-circle arcs from source -> targets
           arcsData={arcs}
+          arcLabel={(d: object) => (d as Arc).label}
           arcColor={() => ACCENT}
           arcStroke={0.5}
           arcAltitudeAutoScale={0.4}
