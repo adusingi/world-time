@@ -1,0 +1,7 @@
+# Marks this directory as its own pnpm workspace root, so pnpm does NOT walk up
+# and attach this project to an unrelated parent workspace (e.g. ~/Documents).
+# Also the pnpm v11 home for the dependency build-script allowlist.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
