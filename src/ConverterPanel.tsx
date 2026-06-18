@@ -135,10 +135,6 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
         <div className="space-y-2">
           {conv.rows.map((r) => (
             <div key={r.city.id} className="flex items-center gap-3">
-              <div className="w-24 shrink-0 text-right text-xs text-slate-400">
-                {r.city.city}
-                {r.isSource && <span className="ml-1 text-emerald-400">●</span>}
-              </div>
               <div className="min-w-0 flex-1">
                 <HourStrip
                   tz={r.city.tz}
@@ -147,6 +143,10 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
                   hour12={conv.hour12}
                   onPick={conv.pickInstant}
                 />
+              </div>
+              <div className="w-24 shrink-0 text-left text-xs text-slate-400">
+                {r.city.city}
+                {r.isSource && <span className="ml-1 text-emerald-400">●</span>}
               </div>
             </div>
           ))}
