@@ -18,14 +18,14 @@ export function WorldTime() {
           <GlobeView conv={conv} />
         </div>
 
-        {/* right: converter panel (scrolls) */}
-        <div className="min-w-0">
+        {/* right: converter panel + footer; footer pinned to the bottom so it
+            stays visible even when the converter content is short */}
+        <div className="flex min-h-screen min-w-0 flex-col">
           <ConverterPanel conv={conv} />
+          <div className="mt-auto px-6 pb-4">
+            <Footer />
+          </div>
         </div>
-      </div>
-
-      <div className="px-6 pb-4">
-        <Footer />
       </div>
     </div>
   );
