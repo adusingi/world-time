@@ -16,7 +16,7 @@ export function WorldTime() {
         {/* left: globe + footer. The column is sticky/full-height on desktop, so
             pinning the footer here keeps it visible no matter how long the
             converter (right) column grows with more cities. */}
-        <div className="flex h-[40vh] flex-col lg:sticky lg:top-0 lg:h-screen">
+        <div className="order-2 flex h-[40vh] flex-col lg:order-1 lg:sticky lg:top-0 lg:h-screen">
           <div className="min-h-0 flex-1">
             <GlobeView conv={conv} />
           </div>
@@ -26,7 +26,7 @@ export function WorldTime() {
         </div>
 
         {/* right: converter panel (scrolls) */}
-        <div className="min-w-0">
+        <div className="order-1 min-w-0 lg:order-2">
           <ConverterPanel conv={conv} />
         </div>
       </div>
