@@ -42,7 +42,7 @@ function byId(id: string): City {
 }
 
 export const DEFAULT_SOURCE: City = byId("okayama");
-export const DEFAULT_TARGETS: City[] = [byId("kigali"), byId("paris"), byId("newyork")];
+export const DEFAULT_TARGETS: City[] = [byId("kigali"), byId("paris")];
 
 // Validate an unknown value (e.g. from localStorage) is a usable City.
 export function isCity(v: unknown): v is City {

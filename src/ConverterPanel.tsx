@@ -30,6 +30,9 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
   const targets = conv.rows.filter((r) => !r.isSource);
   const source = conv.rows.find((r) => r.isSource)!;
   const weather = useWeather(conv.rows.map((r) => r.city));
+  // Only the two most-recently-added cities show as cards (next to the search
+  // field). Every city still appears in the timeline below.
+  const recent = targets.slice(-2);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 text-slate-100">
@@ -94,9 +97,9 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
         </div>
       </div>
 
-      {/* target cards */}
+      {/* target cards — only the last two added, plus the search field */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {targets.map((r) => (
+        {recent.map((r) => (
           <div
             key={r.city.id}
             className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-5 text-left"
