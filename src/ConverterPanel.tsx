@@ -1,6 +1,9 @@
 import { HourStrip } from "./HourStrip.tsx";
 import { CitySearch } from "./CitySearch.tsx";
+import { WeatherBadge } from "./WeatherBadge.tsx";
 import { signed } from "./timezone.ts";
+import { cityKey } from "./cities.ts";
+import { useWeather } from "./useWeather.ts";
 import type { Converter } from "./useConverter.ts";
 
 // Small inline clock glyph next to the hero time.
@@ -26,7 +29,7 @@ function ClockIcon() {
 export function ConverterPanel({ conv }: { conv: Converter }) {
   const targets = conv.rows.filter((r) => !r.isSource);
   const source = conv.rows.find((r) => r.isSource)!;
-  const inUse = [conv.sourceId, ...conv.targetIds];
+  const weather = useWeather(conv.rows.map((r) => r.city));
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 text-slate-100">
@@ -62,12 +65,16 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
           {source.city.city} · {source.fmt.weekday}, {source.fmt.date}
         </div>
 
+        <div className="mt-2">
+          <WeatherBadge weather={weather[source.city.id]} size="md" />
+        </div>
+
         {/* secondary controls: pick a source city, a date, and 12/24h */}
         <div className="mx-auto mt-5 flex max-w-md flex-wrap items-center justify-center gap-2 text-sm">
           <div className="w-44">
             <CitySearch
               placeholder={`From: ${source.city.city}`}
-              exclude={[conv.sourceId]}
+              excludeKeys={[cityKey(source.city)]}
               onPick={conv.changeSource}
               dark
             />
@@ -95,7 +102,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
             className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-5 text-left"
           >
             <button
-              onClick={() => conv.removeTarget(r.city.id)}
+              onClick={() => conv.removeTarget(cityKey(r.city))}
               className="absolute right-3 top-3 text-slate-600 opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
               title="Remove"
             >
@@ -108,13 +115,18 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
             <div className="text-xs text-slate-500">
               {r.fmt.weekday}, {r.fmt.date} · {signed(r.diff)}h
             </div>
+            {weather[r.city.id] && (
+              <div className="mt-2">
+                <WeatherBadge weather={weather[r.city.id]} />
+              </div>
+            )}
           </div>
         ))}
         <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-700 p-5">
           <div className="w-full">
             <CitySearch
               placeholder="+ Add city"
-              exclude={inUse}
+              excludeKeys={conv.inUseKeys}
               onPick={conv.addTarget}
               dark
             />

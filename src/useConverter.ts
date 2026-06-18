@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  CITIES,
-  DEFAULT_SOURCE_ID,
-  DEFAULT_TARGET_IDS,
-  findCity,
+  DEFAULT_SOURCE,
+  DEFAULT_TARGETS,
+  cityKey,
+  isCity,
   type City,
 } from "./cities.ts";
 import {
@@ -40,56 +40,53 @@ function nowInZone(tz: string): { date: string; time: string } {
   return { date: `${p.year}-${p.month}-${p.day}`, time: `${hh}:${p.minute}` };
 }
 
-// localStorage persistence (no server). Only the durable preferences are saved —
-// date/time reset each visit since they're per-task.
-const STORE_KEY = "world-time:v1";
-type Persisted = { sourceId: string; targetIds: string[]; hour12: boolean };
+// localStorage persistence (no server). We now store full City objects, so
+// cities picked from the live search survive a reload. Date/time still reset
+// each visit since they're per-task.
+const STORE_KEY = "world-time:v2";
+type Persisted = { source: City; targets: City[]; hour12: boolean };
 
 function loadPersisted(): Persisted {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const p = JSON.parse(raw) as Partial<Persisted>;
+      const source = isCity(p.source) ? p.source : DEFAULT_SOURCE;
+      const targets = Array.isArray(p.targets) ? p.targets.filter(isCity) : DEFAULT_TARGETS;
       return {
-        sourceId: p.sourceId && CITIES.some((c) => c.id === p.sourceId) ? p.sourceId : DEFAULT_SOURCE_ID,
-        targetIds: Array.isArray(p.targetIds)
-          ? p.targetIds.filter((id) => CITIES.some((c) => c.id === id))
-          : DEFAULT_TARGET_IDS,
+        source,
+        targets,
         hour12: typeof p.hour12 === "boolean" ? p.hour12 : false,
       };
     }
   } catch {
     /* ignore corrupt storage */
   }
-  return { sourceId: DEFAULT_SOURCE_ID, targetIds: DEFAULT_TARGET_IDS, hour12: false };
+  return { source: DEFAULT_SOURCE, targets: DEFAULT_TARGETS, hour12: false };
 }
 
 export function useConverter() {
-  // Lazy initialisers: read localStorage / the device clock once at mount,
-  // not on every render.
+  // Lazy initialisers: read localStorage / the device clock once at mount.
   const [persisted] = useState(loadPersisted);
-  const [sourceId, setSourceId] = useState(persisted.sourceId);
-  const [targetIds, setTargetIds] = useState<string[]>(persisted.targetIds);
+  const [source, setSource] = useState<City>(persisted.source);
+  const [targets, setTargets] = useState<City[]>(persisted.targets);
   const [hour12, setHour12] = useState(persisted.hour12);
-  const initNow = useState(() => nowInZone(findCity(persisted.sourceId).tz))[0];
+  const initNow = useState(() => nowInZone(persisted.source.tz))[0];
   const [date, setDate] = useState(initNow.date); // "YYYY-MM-DD" (source wall date)
   const [time, setTime] = useState(initNow.time); // "HH:MM" (source wall time)
 
   // "Live" = the source time follows the real clock and ticks on its own.
-  // Any manual edit (typing a time, picking an instant) pins it so the
-  // converter doesn't clobber what the user set up. "Now" resumes live.
+  // Any manual edit (typing a time, picking an instant) pins it. "Now" resumes.
   const [live, setLive] = useState(true);
 
   useEffect(() => {
-    const data: Persisted = { sourceId, targetIds, hour12 };
+    const data: Persisted = { source, targets, hour12 };
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(data));
     } catch {
       /* ignore quota/private-mode errors */
     }
-  }, [sourceId, targetIds, hour12]);
-
-  const source = findCity(sourceId);
+  }, [source, targets, hour12]);
 
   // While live, advance the source time to "now" in the source city. We poll
   // each second but setState bails out unless the minute string changes, so
@@ -131,17 +128,15 @@ export function useConverter() {
   }, [date, source.tz]);
 
   const rows: Row[] = useMemo(() => {
-    const ids = [sourceId, ...targetIds.filter((id) => id !== sourceId)];
-    return ids.map((id) => {
-      const city = findCity(id);
-      return {
-        city,
-        fmt: formatInZone(sourceInstant, city.tz, hour12),
-        diff: hourDiff(source.tz, city.tz, sourceInstant),
-        isSource: id === sourceId,
-      };
-    });
-  }, [sourceId, targetIds, sourceInstant, hour12, source.tz]);
+    const srcKey = cityKey(source);
+    const list = [source, ...targets.filter((t) => cityKey(t) !== srcKey)];
+    return list.map((city) => ({
+      city,
+      fmt: formatInZone(sourceInstant, city.tz, hour12),
+      diff: hourDiff(source.tz, city.tz, sourceInstant),
+      isSource: cityKey(city) === srcKey,
+    }));
+  }, [source, targets, sourceInstant, hour12]);
 
   // Slider click -> set source wall date/time to that instant (in source zone).
   function pickInstant(instant: Date) {
@@ -165,37 +160,39 @@ export function useConverter() {
   }
 
   // Swap the source city; the previous source becomes a target so it's not lost.
-  function changeSource(id: string) {
-    if (id === sourceId) return;
-    setTargetIds((prev) => {
-      const without = prev.filter((x) => x !== id);
-      return without.includes(sourceId) ? without : [sourceId, ...without];
+  function changeSource(city: City) {
+    const key = cityKey(city);
+    if (key === cityKey(source)) return;
+    setTargets((prev) => {
+      const without = prev.filter((t) => cityKey(t) !== key);
+      return without.some((t) => cityKey(t) === cityKey(source))
+        ? without
+        : [source, ...without];
     });
-    setSourceId(id);
+    setSource(city);
   }
 
-  function addTarget(id: string) {
-    setTargetIds((prev) =>
-      prev.includes(id) || id === sourceId ? prev : [...prev, id],
+  function addTarget(city: City) {
+    const key = cityKey(city);
+    setTargets((prev) =>
+      key === cityKey(source) || prev.some((t) => cityKey(t) === key)
+        ? prev
+        : [...prev, city],
     );
   }
-  function removeTarget(id: string) {
-    setTargetIds((prev) => prev.filter((x) => x !== id));
+  function removeTarget(key: string) {
+    setTargets((prev) => prev.filter((t) => cityKey(t) !== key));
   }
 
-  const available = CITIES.filter(
-    (c) => c.id !== sourceId && !targetIds.includes(c.id),
-  );
+  const inUseKeys = useMemo(() => rows.map((r) => cityKey(r.city)), [rows]);
 
   return {
-    sourceId,
-    setSourceId,
-    changeSource,
     source,
-    targetIds,
+    changeSource,
+    targets,
     addTarget,
     removeTarget,
-    available,
+    inUseKeys,
     date,
     setDate: editDate,
     time,
