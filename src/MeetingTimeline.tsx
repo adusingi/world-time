@@ -61,6 +61,9 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
     conv.pickInstant(new Date(conv.sourceDayStart.getTime() + hour * 3_600_000));
   }
 
+  // Source's calendar date — rows whose date differs are on another day.
+  const sourceDate = conv.rows.find((r) => r.isSource)?.fmt.date;
+
   return (
     <div className="relative">
       {/* hour axis */}
@@ -128,8 +131,11 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
                 ))}
               </div>
 
-              <div className="w-16 shrink-0 text-right font-mono-slab text-xs text-slate-400">
-                {r.fmt.time}
+              <div className="w-16 shrink-0 text-right font-mono-slab text-xs leading-tight text-slate-400">
+                <div>{r.fmt.time}</div>
+                {!r.isSource && r.fmt.date !== sourceDate && (
+                  <div className="text-[10px] text-amber-400/80">{r.fmt.date}</div>
+                )}
               </div>
             </div>
           );
