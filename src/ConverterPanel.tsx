@@ -1,61 +1,93 @@
-import { HourStrip } from "./HourStrip.tsx";
+import { useState } from "react";
 import { CitySearch } from "./CitySearch.tsx";
-import { WeatherBadge } from "./WeatherBadge.tsx";
-import { signed } from "./timezone.ts";
+import { MeetingTimeline } from "./MeetingTimeline.tsx";
 import { cityKey } from "./cities.ts";
 import { useWeather } from "./useWeather.ts";
-import type { Converter } from "./useConverter.ts";
+import type { Converter, Row } from "./useConverter.ts";
 
-// Right column: the converter UI. Big editable source time as a hero, target
-// cities as a card grid, and a full-width timeline. State lives in `conv`
-// (shared with the globe) so the two halves stay in lock-step.
+// Working hours used for the "best overlap" suggestion (local to each city).
+const WORK_START = 9;
+const WORK_END = 17;
+
+// The source hour where the most cities sit within working hours.
+function bestOverlap(rows: Row[]): { hour: number; count: number } {
+  let best = { hour: WORK_START, count: -1 };
+  for (let h = 0; h < 24; h++) {
+    let count = 0;
+    for (const r of rows) {
+      const local = (((h + (r.isSource ? 0 : Math.round(r.diff))) % 24) + 24) % 24;
+      if (local >= WORK_START && local < WORK_END) count++;
+    }
+    if (count > best.count) best = { hour: h, count };
+  }
+  return best;
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+function fmtDate(d: string): string {
+  const [y, m, day] = d.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// Right column: the converter. Hero source time, quick controls, a "best
+// overlap" suggestion, the planner timeline, and an add-city control. Shares
+// `conv` with the globe so the two halves stay in sync.
 export function ConverterPanel({ conv }: { conv: Converter }) {
-  const targets = conv.rows.filter((r) => !r.isSource);
   const source = conv.rows.find((r) => r.isSource)!;
-  const weather = useWeather(conv.rows.map((r) => r.city));
-  // Only the two most-recently-added cities show as cards (next to the search
-  // field). Every city still appears in the timeline below.
-  const recent = targets.slice(-2);
+  const weather = useWeather([source.city])[source.city.id];
+  const overlap = bestOverlap(conv.rows);
+  const [adding, setAdding] = useState(false);
 
   return (
     <div className="w-full px-6 py-10 text-slate-100">
-      {/* hero source */}
-      <div className="mb-12 text-center">
-        {/* live indicator / resume button */}
+      {/* hero */}
+      <div className="mb-10 text-center">
         <button
           onClick={conv.goLive}
           disabled={conv.live}
-          className="mb-4 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-300 transition enabled:hover:text-emerald-300"
+          className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-slate-300 transition enabled:hover:text-emerald-300"
           title={conv.live ? "Following the current time" : "Snap back to now"}
         >
           <span
             className={
-              conv.live ? "h-2 w-2 rounded-full bg-emerald-400" : "h-2 w-2 rounded-full bg-slate-500"
+              conv.live
+                ? "h-2 w-2 rounded-full bg-emerald-400"
+                : "h-2 w-2 rounded-full bg-slate-500"
             }
           />
           {conv.live ? "Live" : "Now"}
         </button>
 
-        {/* big editable time */}
         <div className="flex items-center justify-center">
           <input
             type="time"
             value={conv.time}
             onChange={(e) => conv.setTime(e.target.value)}
-            className="hero-time bg-transparent text-center text-7xl font-bold tracking-tight text-white focus:outline-none"
+            className="hero-time font-mono-slab bg-transparent text-center text-7xl font-bold tracking-tight text-white focus:outline-none"
           />
         </div>
 
-        <div className="mt-3 text-slate-400">
+        <div className="mt-2 text-slate-400">
           {source.city.city} · {source.fmt.weekday}, {source.fmt.date}
         </div>
+        {weather && (
+          <div className="mt-1 text-sm text-slate-500">
+            {cap(weather.label)} · {weather.temp}°
+          </div>
+        )}
 
-        <div className="mt-2">
-          <WeatherBadge weather={weather[source.city.id]} size="md" />
-        </div>
-
-        {/* secondary controls: pick a source city, a date, and 12/24h */}
-        <div className="mx-auto mt-5 flex max-w-md flex-wrap items-center justify-center gap-2 text-sm">
+        {/* quick controls */}
+        <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-2 text-sm">
           <div className="w-44">
             <CitySearch
               placeholder={`From: ${source.city.city}`}
@@ -64,103 +96,70 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
               dark
             />
           </div>
-          <input
-            type="date"
-            value={conv.date}
-            onChange={(e) => conv.setDate(e.target.value)}
-            className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-200"
-          />
+          <div className="relative">
+            <div className="font-mono-slab rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-slate-200">
+              {fmtDate(conv.date)}
+            </div>
+            <input
+              type="date"
+              value={conv.date}
+              onChange={(e) => conv.setDate(e.target.value)}
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label="Date"
+            />
+          </div>
           <button
             onClick={() => conv.setHour12(!conv.hour12)}
-            className="rounded-md border border-slate-700 px-2 py-1.5 text-xs text-slate-300"
+            className="rounded-lg bg-emerald-400 px-3 py-2 font-medium text-slate-900 transition hover:bg-emerald-300"
+            title="Toggle 12/24-hour"
           >
             {conv.hour12 ? "12h" : "24h"}
           </button>
         </div>
       </div>
 
-      {/* target cards — only the last two added, plus the search field */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {recent.map((r) => (
-          <div
-            key={r.city.id}
-            className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-5 text-left"
-          >
-            <button
-              onClick={() => conv.removeTarget(cityKey(r.city))}
-              className="absolute right-3 top-3 text-slate-600 opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
-              title="Remove"
-            >
-              ✕
-            </button>
-            <div className="text-4xl font-bold text-white">{r.fmt.time}</div>
-            <div className="mt-2 text-sm font-medium text-slate-200">
-              {r.city.city}
-            </div>
-            <div className="text-xs text-slate-500">
-              {r.fmt.weekday}, {r.fmt.date} · {signed(r.diff)}h
-            </div>
-            {weather[r.city.id] && (
-              <div className="mt-2">
-                <WeatherBadge weather={weather[r.city.id]} />
-              </div>
-            )}
-          </div>
-        ))}
-        <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-700 p-5">
-          <div className="w-full">
+      {/* best overlap suggestion */}
+      <button
+        onClick={() => conv.pickInstant(new Date(conv.sourceDayStart.getTime() + overlap.hour * 3_600_000))}
+        className="mb-8 flex w-full items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-3.5 text-left text-sm text-slate-300 transition hover:border-emerald-500/40"
+      >
+        <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+        <span>
+          Best overlap{" "}
+          <span className="font-mono-slab text-emerald-300">
+            {pad(overlap.hour)}:00–{pad((overlap.hour + 1) % 24)}:00
+          </span>{" "}
+          — {overlap.count} of {conv.rows.length} cities in working hours
+        </span>
+      </button>
+
+      {/* planner timeline */}
+      <MeetingTimeline conv={conv} />
+
+      {/* add city */}
+      <div className="mt-10 flex flex-col items-center gap-2">
+        {adding ? (
+          <div className="w-60">
             <CitySearch
-              placeholder="+ Add city"
+              placeholder="Search a city…"
               excludeKeys={conv.inUseKeys}
-              onPick={conv.addTarget}
+              onPick={(c) => {
+                conv.addTarget(c);
+                setAdding(false);
+              }}
               dark
             />
           </div>
-        </div>
-      </div>
-
-      {/* full-width timeline (WTB-style slider) */}
-      <div className="mt-14">
-        <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">
-            Timeline
-          </h2>
-          <span className="text-xs text-slate-500">
-            Click an hour to set the time
-          </span>
-        </div>
-        <div className="space-y-2">
-          {conv.rows.map((r) => (
-            <div key={r.city.id} className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <HourStrip
-                  tz={r.city.tz}
-                  sourceDayStart={conv.sourceDayStart}
-                  selectedInstant={conv.sourceInstant}
-                  hour12={conv.hour12}
-                  onPick={conv.pickInstant}
-                />
-              </div>
-              <div className="group flex w-28 shrink-0 items-center gap-1 text-left text-xs text-slate-400">
-                <span className="truncate">{r.city.city}</span>
-                {r.isSource ? (
-                  <span className="text-emerald-400">●</span>
-                ) : (
-                  <button
-                    onClick={() => conv.removeTarget(cityKey(r.city))}
-                    title={`Remove ${r.city.city}`}
-                    className="text-slate-600 opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 text-center text-xs text-slate-500">
-          Base city: {source.city.city}
-        </div>
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex h-14 w-14 items-center justify-center rounded-full border border-slate-700 text-2xl leading-none text-emerald-300 transition hover:border-emerald-400 hover:text-emerald-200"
+            title="Add a city"
+          >
+            +
+          </button>
+        )}
+        <span className="text-xs text-slate-500">Add city</span>
       </div>
     </div>
   );

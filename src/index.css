@@ -1,4 +1,11 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
 @import "tailwindcss";
+
+/* Slab-serif monospace for the clock, dates, and timeline figures. */
+.font-mono-slab {
+  font-family: "Space Mono", ui-monospace, SFMono-Regular, monospace;
+  font-feature-settings: "tnum" 1;
+}
 
 /* Make the native time/date picker indicators legible on the dark theme. */
 input[type="time"]::-webkit-calendar-picker-indicator,
