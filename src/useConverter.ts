@@ -13,6 +13,7 @@ import {
   type Formatted,
 } from "./timezone.ts";
 import { detectSource } from "./detectSource.ts";
+import { parseSharedCities } from "./shareLink.ts";
 
 export type Row = {
   city: City;
@@ -70,12 +71,17 @@ function loadPersisted(): Persisted & { stored: boolean } {
 }
 
 export function useConverter() {
-  // Lazy initialisers: read localStorage / the device clock once at mount.
+  // Lazy initialisers: read the share link / localStorage / device clock once at
+  // mount. A meeting link (?m=…) wins over saved state — opening someone's link
+  // should show their cities, and we then persist them as the new local state.
+  const [shared] = useState(parseSharedCities);
   const [persisted] = useState(loadPersisted);
-  const [source, setSource] = useState<City>(persisted.source);
-  const [targets, setTargets] = useState<City[]>(persisted.targets);
+  const initSource = shared?.source ?? persisted.source;
+  const initTargets = shared?.targets ?? persisted.targets;
+  const [source, setSource] = useState<City>(initSource);
+  const [targets, setTargets] = useState<City[]>(initTargets);
   const [hour12, setHour12] = useState(persisted.hour12);
-  const initNow = useState(() => nowInZone(persisted.source.tz))[0];
+  const initNow = useState(() => nowInZone(initSource.tz))[0];
   const [date, setDate] = useState(initNow.date); // "YYYY-MM-DD" (source wall date)
   const [time, setTime] = useState(initNow.time); // "HH:MM" (source wall time)
 
@@ -87,9 +93,18 @@ export function useConverter() {
   // (capital of their country, then Okayama, as fallbacks). We hold off writing
   // to localStorage until detection settles, so the transient Okayama default
   // isn't persisted (which would suppress detection on the next visit).
-  const [persistReady, setPersistReady] = useState(persisted.stored);
+  // A share link already names the source, so persist right away and skip
+  // detection. Strip ?m=… from the address bar once applied, so a later reload
+  // (or local edits) fall back to localStorage instead of re-pinning the link.
+  const [persistReady, setPersistReady] = useState(persisted.stored || !!shared);
   useEffect(() => {
-    if (persisted.stored) return;
+    if (!shared) return;
+    const url = `${window.location.origin}${window.location.pathname}${window.location.hash}`;
+    window.history.replaceState(null, "", url);
+  }, [shared]);
+
+  useEffect(() => {
+    if (persisted.stored || shared) return;
     let alive = true;
     detectSource()
       .then((city) => {

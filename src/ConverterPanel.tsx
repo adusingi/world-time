@@ -2,6 +2,7 @@ import { useState } from "react";
 import { CitySearch } from "./CitySearch.tsx";
 import { MeetingTimeline } from "./MeetingTimeline.tsx";
 import { cityKey } from "./cities.ts";
+import { buildShareUrl } from "./shareLink.ts";
 import { useWeather } from "./useWeather.ts";
 import type { Converter, Row } from "./useConverter.ts";
 
@@ -47,6 +48,22 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
   const weather = useWeather([source.city])[source.city.id];
   const overlap = bestOverlap(conv.rows);
   const [adding, setAdding] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Copy a self-contained meeting link for the current cities (source first).
+  async function share() {
+    const url = buildShareUrl(conv.rows.map((r) => r.city));
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard blocked (e.g. insecure context) — fall back to a prompt so the
+      // link is still selectable/copyable by hand.
+      window.prompt("Copy this meeting link:", url);
+      return;
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <div className="w-full px-6 py-10 text-fg">
@@ -114,6 +131,14 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
             title="Toggle 12/24-hour"
           >
             {conv.hour12 ? "12h" : "24h"}
+          </button>
+          <button
+            onClick={share}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2 font-medium text-fg transition hover:border-accent hover:text-accent"
+            title="Copy a link that opens these cities"
+          >
+            <span aria-hidden="true">{copied ? "✓" : "🔗"}</span>
+            {copied ? "Link copied" : "Share"}
           </button>
         </div>
       </div>
