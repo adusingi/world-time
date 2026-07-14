@@ -1,6 +1,6 @@
 # TASKS.md — World Time
 *Active development tracker*
-*Last updated: 2026-06-27*
+*Last updated: 2026-07-14*
 *Current sprint: Mobile layout polish*
 
 ---
@@ -61,6 +61,31 @@ layout without regressing the desktop two-column view. ✅
 
 **Exit criteria:** Sharing the dev server via `cloudflared` no longer requires a
 per-URL config edit. ✅
+
+---
+
+## ✅ Paper Theme — 2026-07-14
+**Objective:** Add a light theme with an actually-white background/panel — the
+three existing light themes (catppuccin latte, solarized light, rose pine
+dawn) are all deliberately tinted off-whites. Mirrors the same addition made
+to `@mobayilo/themes` in the design-system repo (world-time hasn't migrated
+onto the shared package yet, so the palette is kept in sync by hand).
+**Branch:** `feat/paper-theme`
+
+### Done ✅
+- [x] `src/themes.ts` — add `paper` to the `THEMES` list (light group)
+- [x] `src/index.css` — add `html[data-theme="paper"]` colour block: true
+      `#ffffff` background/panel, foreground echoing mobayilo's own
+      `#0f172a` background, accent the same green darkened for AA contrast
+      on white
+
+**Test checklist**
+- [x] `pnpm build` passes (tsc + vite build green)
+- [x] "paper" appears in the theme switcher's light group and applies
+      correctly via `data-theme`
+
+**Exit criteria:** Theme switcher offers a true-white option alongside the
+three tinted light themes. ✅
 
 ---
 
