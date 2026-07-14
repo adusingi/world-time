@@ -19,6 +19,7 @@ export const THEMES: Theme[] = [
   { id: "catppuccin-latte", group: "light", label: "catppuccin latte" },
   { id: "solarized-light", group: "light", label: "solarized light" },
   { id: "rose-pine-dawn", group: "light", label: "rose pine dawn" },
+  { id: "paper", group: "light", label: "paper" },
 ];
 
 export function getThemeById(id: string | undefined | null): Theme {
