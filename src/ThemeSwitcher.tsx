@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { DEFAULT_THEME_ID, getThemeById, THEMES, THEME_STORAGE_KEY } from "./themes.ts";
 
 // Theme switcher borrowed from the curator-board project. Sets data-theme on
@@ -116,65 +117,74 @@ export function ThemeSwitcher() {
         <span className="theme-trigger-hint">[/]</span>
       </button>
 
-      {open && (
-        <div
-          className="theme-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Theme switcher"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) close();
-          }}
-        >
-          <div className="theme-panel" onMouseLeave={() => previewTheme(currentThemeId)}>
-            <div className="theme-panel-header">
-              <div className="theme-panel-title">settings</div>
-              <div className="theme-panel-tab">theme</div>
-            </div>
+      {/* Portal to <body>: the footer lives inside a sticky column, whose
+          stacking context would otherwise trap the overlay's z-index below
+          the converter column. */}
+      {open &&
+        createPortal(
+          <div
+            className="theme-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Theme switcher"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) close();
+            }}
+          >
+            <div className="theme-panel" onMouseLeave={() => previewTheme(currentThemeId)}>
+              <div className="theme-panel-header">
+                <div className="theme-panel-title">settings</div>
+                <div className="theme-panel-tab">theme</div>
+              </div>
 
-            <div className="theme-group">
-              {groups.map((group) => (
-                <div key={group.label} className="theme-group-block">
-                  <div className="theme-separator">
-                    <span>{group.label}</span>
+              <div className="theme-group">
+                {groups.map((group) => (
+                  <div key={group.label} className="theme-group-block">
+                    <div className="theme-separator">
+                      <span>{group.label}</span>
+                    </div>
+                    <div
+                      className="theme-options"
+                      role="listbox"
+                      aria-label={`${group.label} themes`}
+                    >
+                      {group.items.map((theme) => {
+                        const index = THEMES.findIndex((t) => t.id === theme.id);
+                        return (
+                          <button
+                            key={theme.id}
+                            type="button"
+                            role="option"
+                            aria-selected={theme.id === currentThemeId}
+                            className="theme-option"
+                            data-highlighted={highlightedIndex === index}
+                            onMouseEnter={() => {
+                              previewTheme(theme.id);
+                              setHighlightedIndex(index);
+                            }}
+                            onClick={() => choose(theme.id, index)}
+                          >
+                            <span>{theme.label}</span>
+                            {theme.id === currentThemeId ? <span>✓</span> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="theme-options" role="listbox" aria-label={`${group.label} themes`}>
-                    {group.items.map((theme) => {
-                      const index = THEMES.findIndex((t) => t.id === theme.id);
-                      return (
-                        <button
-                          key={theme.id}
-                          type="button"
-                          role="option"
-                          aria-selected={theme.id === currentThemeId}
-                          className="theme-option"
-                          data-highlighted={highlightedIndex === index}
-                          onMouseEnter={() => {
-                            previewTheme(theme.id);
-                            setHighlightedIndex(index);
-                          }}
-                          onClick={() => choose(theme.id, index)}
-                        >
-                          <span>{theme.label}</span>
-                          {theme.id === currentThemeId ? <span>✓</span> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
 
-            <div className="theme-footer">
-              <span>↑↓ select</span>
-              <span>↵ apply</span>
-              <button type="button" className="theme-close" onClick={close}>
-                esc close
-              </button>
+              <div className="theme-footer">
+                <span>↑↓ select</span>
+                <span>↵ apply</span>
+                <button type="button" className="theme-close" onClick={close}>
+                  esc close
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
