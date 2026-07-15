@@ -1,6 +1,6 @@
 # TASKS.md — World Time
 *Active development tracker*
-*Last updated: 2026-07-14*
+*Last updated: 2026-07-15*
 *Current sprint: Mobile layout polish*
 
 ---
@@ -86,6 +86,27 @@ onto the shared package yet, so the palette is kept in sync by hand).
 
 **Exit criteria:** Theme switcher offers a true-white option alongside the
 three tinted light themes. ✅
+
+---
+
+## ✅ Theme Switcher Modal Stacking Fix — 2026-07-15
+**Objective:** The open theme switcher modal rendered underneath the converter
+column: the overlay lives in the footer inside the `lg:sticky` left column,
+and `position: sticky` creates a stacking context that trapped its
+`z-index: 40`.
+**Branch:** `feat/paper-theme` (shipped with the paper theme)
+
+### Done ✅
+- [x] `src/ThemeSwitcher.tsx` — render the open overlay through
+      `createPortal(..., document.body)` so it escapes every ancestor
+      stacking context
+
+**Test checklist**
+- [x] `pnpm build` passes (tsc + vite build green)
+- [x] Verified in-browser: modal + backdrop blur fully cover both columns
+
+**Exit criteria:** Theme modal overlays the whole page regardless of layout
+stacking contexts. ✅
 
 ---
 
