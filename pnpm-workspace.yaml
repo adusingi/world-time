@@ -3,5 +3,12 @@
 # Also the pnpm v11 home for the dependency build-script allowlist.
 allowBuilds:
   esbuild: true
-  sharp: true
   workerd: true
+  # sharp (a transitive dep of wrangler -> miniflare) is denied on purpose.
+  # Its install script only decides whether to compile sharp from source. It
+  # picks a source build when it finds a global libvips >= 8.17.3, which
+  # Homebrew's `vips` formula provides. That source build then fails, because
+  # sharp does not ship node-addon-api. We do not need a source build: the
+  # prebuilt @img/sharp-<platform> package is in the lockfile and supplies its
+  # own libvips. Denying the script makes the install use that prebuilt binary.
+  sharp: false
