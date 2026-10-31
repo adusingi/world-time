@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cityKey } from "./cities.ts";
 import type { Converter } from "./useConverter.ts";
 
@@ -39,10 +39,12 @@ function workBands(diff: number): [number, number][] {
 const pct = (n: number) => `${(n / 24) * 100}%`;
 
 // WTB-style planner timeline. The x-axis is the source day's 24 hours; each
-// city's working hours show as a teal band shifted by its offset. An orange
-// "now" line and (when a time is pinned) an emerald "planned" line cross all
-// rows. Click any hour to set the time.
-export function MeetingTimeline({ conv }: { conv: Converter }) {
+// city's working hours show as a band shifted by its offset. An orange "now"
+// line and (when a time is pinned) a dashed "planned" line cross all rows.
+// Click any hour to set the time. Kept quiet on purpose: no gridlines or
+// borders, only the bands and the two lines carry colour. `children` render
+// under the last row (the "Add city" control), above the legend.
+export function MeetingTimeline({ conv, children }: { conv: Converter; children?: ReactNode }) {
   const source = conv.source;
   const [now, setNow] = useState(() => new Date());
 
@@ -65,119 +67,111 @@ export function MeetingTimeline({ conv }: { conv: Converter }) {
   const sourceDate = conv.rows.find((r) => r.isSource)?.fmt.date;
 
   return (
-    <div className="relative">
-      {/* hour axis */}
-      <div className="mb-2 flex">
-        <div className="w-36 shrink-0" />
-        <div className="relative h-6 flex-1">
-          {AXIS_TICKS.map((h) => (
-            <div
-              key={h}
-              className="absolute top-0 flex flex-col items-start"
-              style={{ left: pct(h) }}
-            >
-              <span className="font-mono-slab text-[10px] text-muted-soft">
+    <div>
+      {/* axis + rows share one box, so the now/planned lines stop at the last row */}
+      <div className="relative">
+        <div className="mb-1 flex">
+          <div className="w-24 shrink-0 sm:w-36" />
+          <div className="relative h-5 flex-1">
+            {AXIS_TICKS.map((h) => (
+              <span
+                key={h}
+                className="font-mono-slab absolute top-0 text-[10px] text-muted-soft"
+                style={{ left: pct(h) }}
+              >
                 {String(h).padStart(2, "0")}
               </span>
-              <span className="mt-1 h-1.5 w-px bg-line" />
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="w-16 shrink-0" />
         </div>
-        <div className="w-16 shrink-0" />
-      </div>
 
-      {/* rows */}
-      <div className="space-y-2">
-        {conv.rows.map((r) => {
-          const bands = workBands(r.isSource ? 0 : r.diff);
-          return (
-            <div key={r.city.id} className="group flex items-center">
-              <div className="flex w-36 shrink-0 items-center gap-1.5 pr-3">
-                <span className="truncate text-sm text-fg">{r.city.city}</span>
-                {r.isSource ? (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                ) : (
-                  <button
-                    onClick={() => conv.removeTarget(cityKey(r.city))}
-                    title={`Remove ${r.city.city}`}
-                    className="shrink-0 text-muted-soft opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              <div className="relative h-9 flex-1 overflow-hidden rounded-md bg-panel-soft">
-                {/* clickable hour cells + faint gridlines */}
-                <div className="absolute inset-0 flex">
-                  {Array.from({ length: 24 }, (_, h) => (
+        <div className="space-y-1.5">
+          {conv.rows.map((r) => {
+            const bands = workBands(r.isSource ? 0 : r.diff);
+            return (
+              <div key={r.city.id} className="group flex items-center">
+                <div className="flex w-24 shrink-0 items-center gap-1.5 pr-3 sm:w-36">
+                  <span className="truncate text-sm text-fg">{r.city.city}</span>
+                  {r.isSource ? (
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                  ) : (
                     <button
-                      key={h}
-                      onClick={() => pick(h)}
-                      title={`${String(h).padStart(2, "0")}:00`}
-                      className={`h-full flex-1 transition hover:bg-fg/5 ${
-                        h % 3 === 0 ? "border-l border-fg/10" : ""
-                      }`}
+                      onClick={() => conv.removeTarget(cityKey(r.city))}
+                      title={`Remove ${r.city.city}`}
+                      className="shrink-0 text-muted-soft opacity-0 transition group-hover:opacity-100 hover:text-rose-400"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative h-8 flex-1 overflow-hidden rounded-md bg-fg/[0.03]">
+                  {/* clickable hour cells */}
+                  <div className="absolute inset-0 flex">
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <button
+                        key={h}
+                        onClick={() => pick(h)}
+                        title={`${String(h).padStart(2, "0")}:00`}
+                        className="h-full flex-1 transition hover:bg-fg/5"
+                      />
+                    ))}
+                  </div>
+                  {/* working-hour band(s) */}
+                  {bands.map(([s, e], i) => (
+                    <div
+                      key={i}
+                      className="pointer-events-none absolute inset-y-1 rounded bg-accent/25"
+                      style={{ left: pct(s), width: pct(e - s) }}
                     />
                   ))}
                 </div>
-                {/* working-hour band(s) */}
-                {bands.map(([s, e], i) => (
-                  <div
-                    key={i}
-                    className="pointer-events-none absolute inset-y-1 rounded bg-accent/25 ring-1 ring-inset ring-accent/30"
-                    style={{ left: pct(s), width: pct(e - s) }}
-                  />
-                ))}
-              </div>
 
-              <div className="w-16 shrink-0 text-right font-mono-slab text-xs leading-tight text-muted">
-                <div>{r.fmt.time}</div>
-                {!r.isSource && r.fmt.date !== sourceDate && (
-                  <div className="text-[10px] text-amber-400/80">{r.fmt.date}</div>
-                )}
+                <div className="w-16 shrink-0 text-right font-mono-slab text-xs leading-tight text-muted">
+                  <div>{r.fmt.time}</div>
+                  {!r.isSource && r.fmt.date !== sourceDate && (
+                    <div className="text-[10px] text-amber-400/80">{r.fmt.date}</div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* now / planned overlay, aligned to the track region */}
-      <div className="pointer-events-none absolute bottom-0 left-36 right-16 top-0">
-        {/* faint highlight column around now */}
-        <div
-          className="absolute inset-y-0 bg-fg/[0.04]"
-          style={{ left: `calc(${nowFrac * 100}% - 0.6rem)`, width: "1.2rem" }}
-        />
-        {/* now line (orange, glowing) */}
-        <div
-          className="absolute inset-y-0 w-px bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.9)]"
-          style={{ left: `${nowFrac * 100}%` }}
-        >
-          <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-sm bg-orange-400" />
+            );
+          })}
         </div>
-        {/* planned line (accent, dashed) — only when a time is pinned */}
-        {!conv.live && (
+
+        {/* now / planned lines, aligned to the track region */}
+        <div className="pointer-events-none absolute bottom-0 left-24 right-16 top-0 sm:left-36">
           <div
-            className="absolute inset-y-0 border-l border-dashed border-accent"
-            style={{ left: `${plannedFrac * 100}%` }}
-          />
-        )}
+            className="absolute inset-y-0 w-px bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.7)]"
+            style={{ left: `${nowFrac * 100}%` }}
+          >
+            <span className="absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-orange-400" />
+          </div>
+          {!conv.live && (
+            <div
+              className="absolute inset-y-0 border-l border-dashed border-accent"
+              style={{ left: `${plannedFrac * 100}%` }}
+            />
+          )}
+        </div>
       </div>
 
-      {/* legend */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-soft">
+      {children && <div className="mt-3">{children}</div>}
+
+      {/* legend + hint, one muted line */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-soft">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5">
-            <span className="h-3 w-0.5 bg-orange-400" /> Now
+            <span className="h-2.5 w-2.5 rounded-sm bg-accent/30" /> Work hours
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-4 border-t border-dashed border-accent" /> Planned
+            <span className="h-3 w-px bg-orange-400" /> Now
           </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm bg-accent/30 ring-1 ring-inset ring-accent/30" />{" "}
-            Work hours
-          </span>
+          {!conv.live && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-3 border-l border-dashed border-accent" /> Planned
+            </span>
+          )}
         </div>
         <span>Click an hour to plan a meeting</span>
       </div>

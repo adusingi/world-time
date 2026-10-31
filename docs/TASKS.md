@@ -110,6 +110,34 @@ stacking contexts. ✅
 
 ---
 
+## ✅ Converter Declutter — 2026-10-31
+**Objective:** Cut the visual noise in the converter column: fewer borders,
+related controls grouped.
+**Branch:** `feat/converter-declutter`
+
+### Done ✅
+- [x] `src/ConverterPanel.tsx` — the hero line is the control: click the city
+      to change the source, click the date to change the date (the "From" box
+      and the date box are gone); 12h/24h + Share are plain text buttons
+- [x] `src/ConverterPanel.tsx` — "Best overlap" is a one-line header, no card
+- [x] `src/MeetingTimeline.tsx` — no gridlines, no band borders, no "now"
+      highlight column, no axis ticks; the now/planned lines stop at the last
+      row; "+ Add city" sits under the rows; "Planned" legend only when pinned
+- [x] `src/MeetingTimeline.tsx` — narrower name column on phones (`w-24`)
+- [x] `src/CitySearch.tsx` — `onDismiss` (Esc / outside click) + `autoFocus`
+
+**Test checklist**
+- [x] `pnpm build` passes (tsc + vite build green)
+- [x] Change city + Esc, add city + outside click, plan an hour (screenshots,
+      dark + paper themes, 1440 px and 390 px)
+
+**Exit criteria:** The converter column reads as hero → settings line →
+planner, with no box around anything except the city search while typing. ✅
+
+---
+
 ## 🚧 Backlog
+- [ ] Amber "other day" text (`text-amber-400/80`) is hard to read on the light
+      themes (≈1.6:1 on white); add a theme token for it
 - [ ] Code-split the bundle — production JS is ~2 MB (>500 kB warning on `vite build`);
       consider dynamic `import()` for the globe (three.js) to trim initial load
