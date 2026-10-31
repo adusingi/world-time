@@ -110,6 +110,27 @@ stacking contexts. ✅
 
 ---
 
+## ✅ Footer Declutter — 2026-10-31
+**Objective:** Same "less noise" pass for the footer.
+**Branch:** `feat/footer-declutter` (stacked on `feat/world-dial`)
+
+### Done ✅
+- [x] `src/index.css` — links on one line in `--muted` (accent only on hover),
+      sentence case instead of uppercase tracking, smaller icons; the theme
+      trigger loses its box, ring and backdrop (dot + name + `/` hint)
+- [x] `src/Footer.tsx` — shorter copy ("Clone on GitHub", "Buy me a coffee");
+      `aria-label` on both links, since phones show the icons only
+- [x] `src/ThemeSwitcher.tsx` — hint `[/]` → `/`
+
+**Test checklist**
+- [x] `pnpm build` passes
+- [x] `/` still opens the theme switcher; screenshots at 1440 px (dark + paper)
+      and 390 px
+
+**Exit criteria:** The footer reads as one quiet line with no boxes. ✅
+
+---
+
 ## ✅ World-Time Dial — 2026-10-31
 **Objective:** Show the cities on a "world timer" watch dial that is also a
 planning control. Picked from the `prototype/watch` UI prototype (variant A:

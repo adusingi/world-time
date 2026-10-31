@@ -114,7 +114,7 @@ export function ThemeSwitcher() {
       <button type="button" className="theme-trigger" onClick={toggleOpen}>
         <span className="theme-trigger-dot" />
         <span>{getThemeById(currentThemeId).label}</span>
-        <span className="theme-trigger-hint">[/]</span>
+        <span className="theme-trigger-hint" title="Press / to switch theme">/</span>
       </button>
 
       {/* Portal to <body>: the footer lives inside a sticky column, whose
