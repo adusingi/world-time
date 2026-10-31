@@ -110,6 +110,27 @@ stacking contexts. ✅
 
 ---
 
+## ✅ Converter Polish (from mocks) — 2026-11-01
+**Objective:** Apply the owner's hero + timeline mocks.
+**Branch:** `feat/converter-polish` (stacked on `feat/dial-world-map`)
+
+### Done ✅
+- [x] Hero label "● RIGHT NOW IN <CITY>" (dot with a soft ring); while planning
+      "PLANNED IN <CITY> · BACK TO NOW" (click returns to live)
+- [x] Hero city bold, date muted, no dotted underline (underline on hover)
+- [x] 24h/12h: the active one framed; "Share plan" with a link icon
+- [x] Best-overlap card on the right above the timeline (clock icon, range,
+      "N of M in work hours"; on phones the count moves under the range)
+- [x] Timeline: faint hour lines, bordered work bands, more space between
+      rows, "NOW" before each time while live (hidden on phones), other-day
+      date as "Sat, Oct 31" hanging below the time so rows keep one height
+
+**Test checklist**
+- [x] `pnpm build` passes; "Back to now" returns to live
+- [x] Screenshots: dark live + planning and paper at 1440 px, phone at 390 px
+
+---
+
 ## ✅ World-Time Dial: Polar Map + Reference Cities — 2026-10-31
 **Objective:** Make the dial a real world-timer face: a map of the continents
 inside, and well-known cities on the ring by default, with the user's own

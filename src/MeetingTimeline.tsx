@@ -41,9 +41,9 @@ const pct = (n: number) => `${(n / 24) * 100}%`;
 // WTB-style planner timeline. The x-axis is the source day's 24 hours; each
 // city's working hours show as a band shifted by its offset. An orange "now"
 // line and (when a time is pinned) a dashed "planned" line cross all rows.
-// Click any hour to set the time. Kept quiet on purpose: no gridlines or
-// borders, only the bands and the two lines carry colour. `children` render
-// under the last row (the "Add city" control), above the legend.
+// Click any hour to set the time. Kept quiet: faint hour lines, and only the
+// bands and the two lines carry colour. `children` render under the last row
+// (the "Add city" control), above the legend.
 export function MeetingTimeline({ conv, children }: { conv: Converter; children?: ReactNode }) {
   const source = conv.source;
   const [now, setNow] = useState(() => new Date());
@@ -83,10 +83,10 @@ export function MeetingTimeline({ conv, children }: { conv: Converter; children?
               </span>
             ))}
           </div>
-          <div className="w-16 shrink-0" />
+          <div className="w-20 shrink-0 sm:w-28" />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-4">
           {conv.rows.map((r) => {
             const bands = workBands(r.isSource ? 0 : r.diff);
             return (
@@ -107,14 +107,14 @@ export function MeetingTimeline({ conv, children }: { conv: Converter; children?
                 </div>
 
                 <div className="relative h-8 flex-1 overflow-hidden rounded-md bg-fg/[0.03]">
-                  {/* clickable hour cells */}
+                  {/* clickable hour cells, with a faint line at each hour */}
                   <div className="absolute inset-0 flex">
                     {Array.from({ length: 24 }, (_, h) => (
                       <button
                         key={h}
                         onClick={() => pick(h)}
                         title={`${String(h).padStart(2, "0")}:00`}
-                        className="h-full flex-1 transition hover:bg-fg/5"
+                        className={`h-full flex-1 transition hover:bg-fg/5 ${h ? "border-l border-fg/[0.05]" : ""}`}
                       />
                     ))}
                   </div>
@@ -122,16 +122,25 @@ export function MeetingTimeline({ conv, children }: { conv: Converter; children?
                   {bands.map(([s, e], i) => (
                     <div
                       key={i}
-                      className="pointer-events-none absolute inset-y-1 rounded bg-accent/25"
+                      className="pointer-events-none absolute inset-y-1 rounded-md bg-accent/30 ring-1 ring-inset ring-accent/40"
                       style={{ left: pct(s), width: pct(e - s) }}
                     />
                   ))}
                 </div>
 
-                <div className="w-16 shrink-0 text-right font-mono-slab text-xs leading-tight text-muted">
-                  <div>{r.fmt.time}</div>
+                {/* local time ("NOW" while live); the date only when it differs.
+                    The date hangs below the time, so every row keeps one height. */}
+                <div className="relative w-20 shrink-0 pl-3 text-right leading-tight sm:w-28">
+                  <div className="flex items-baseline justify-end gap-1.5">
+                    {conv.live && (
+                      <span className="hidden text-[10px] uppercase tracking-[0.15em] text-muted-soft sm:inline">Now</span>
+                    )}
+                    <span className="font-mono-slab text-sm text-muted">{r.fmt.time}</span>
+                  </div>
                   {!r.isSource && r.fmt.date !== sourceDate && (
-                    <div className="text-[10px] text-amber-400/80">{r.fmt.date}</div>
+                    <div className="absolute right-0 top-full mt-0.5 whitespace-nowrap text-xs text-amber-400/80">
+                      {r.fmt.weekday}, {r.fmt.date}
+                    </div>
                   )}
                 </div>
               </div>
@@ -140,7 +149,7 @@ export function MeetingTimeline({ conv, children }: { conv: Converter; children?
         </div>
 
         {/* now / planned lines, aligned to the track region */}
-        <div className="pointer-events-none absolute bottom-0 left-24 right-16 top-0 sm:left-36">
+        <div className="pointer-events-none absolute bottom-0 left-24 right-20 top-0 sm:left-36 sm:right-28">
           <div
             className="absolute inset-y-0 w-px bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.7)]"
             style={{ left: `${nowFrac * 100}%` }}
