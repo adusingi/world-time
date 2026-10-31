@@ -1,6 +1,6 @@
 # PLANNING.md — World Time
 *Architecture, Phases, and Strategic Decisions*
-*Last updated: 2026-06-27*
+*Last updated: 2026-10-31*
 
 ---
 
@@ -63,7 +63,7 @@ No database · no API keys · no server-side user state
 | Hosting | Cloudflare Pages | Free static hosting + edge functions, global CDN |
 | Geolocation | Cloudflare edge (`request.cf`) | No permission prompt, no third-party key |
 | City search / weather | Open-Meteo | Free, keyless, CORS-enabled |
-| CI/CD | `pnpm build` + `wrangler pages deploy` | Single-command deploy |
+| CI/CD | Cloudflare Pages Git integration (`pnpm run build` on each push) | A push is the deploy: `main` → production, other branches → preview |
 
 ---
 
