@@ -31,13 +31,18 @@ world-time/
     ├── main.tsx               # ReactDOM entry — createRoot + StrictMode
     ├── App.tsx                # Trivial shell → renders <WorldTime/>
     ├── index.css              # Tailwind import, Space Mono font, theme tweaks
-    ├── WorldTime.tsx          # Two-column layout shell (globe | converter)
+    ├── WorldTime.tsx          # Two-column layout shell (dial or globe | converter)
+    ├── ViewToggle.tsx         # Dial ⇄ Globe toggle + persisted choice
     │
     ├── useConverter.ts        # ★ Core state hook (single source of truth)
     ├── timezone.ts            # DST-correct timezone math (Intl only, no libs)
     │
-    ├── GlobeView.tsx          # Left column: react-globe.gl 3D globe + arcs
-    ├── ConverterPanel.tsx     # Right column: hero, controls, overlap, add-city
+    ├── WorldDial.tsx          # Left column (default): world-time watch dial
+    ├── dialModel.ts           # Dial geometry: city angles, ring, label tracks
+    ├── useDialInput.ts        # Dial gestures: ring drag, crown, wheel, keys
+    ├── useDialMotion.ts       # Ring rotation tween + 4 Hz seconds hand
+    ├── GlobeView.tsx          # Left column (alternative): 3D globe + arcs
+    ├── ConverterPanel.tsx     # Right column: hero, settings line, overlap, add-city
     ├── MeetingTimeline.tsx    # Planner timeline (work-hour bands, now-line)
     │
     ├── CitySearch.tsx         # City picker (bundled list + live geocoding)
@@ -51,7 +56,7 @@ world-time/
 Layers:
 - **Shell/layout:** `index.html`, `main.tsx`, `App.tsx`, `WorldTime.tsx`, `index.css`
 - **State + domain logic:** `useConverter.ts`, `timezone.ts`, `cities.ts`
-- **View components:** `GlobeView.tsx`, `ConverterPanel.tsx`, `MeetingTimeline.tsx`, `CitySearch.tsx`
+- **View components:** `WorldDial.tsx` (+ `dialModel.ts`, `useDialInput.ts`, `useDialMotion.ts`), `ViewToggle.tsx`, `GlobeView.tsx`, `ConverterPanel.tsx`, `MeetingTimeline.tsx`, `CitySearch.tsx`
 - **External data:** `geocode.ts`, `weather.ts`, `useWeather.ts`, `public/countries-110m.geojson`
 
 ---
@@ -68,6 +73,7 @@ graph TD
   subgraph SPA["Static SPA (Cloudflare Pages CDN)"]
     WT[WorldTime shell]
     UC[useConverter — state]
+    WD[WorldDial]
     GV[GlobeView]
     CP[ConverterPanel]
     MT[MeetingTimeline]
@@ -78,6 +84,7 @@ graph TD
 
   User --> WT
   WT --> UC
+  UC <--> WD
   UC --> GV
   UC --> CP
   CP --> MT
@@ -89,11 +96,14 @@ graph TD
   UW -->|"GET api.open-meteo.com/v1/forecast"| OM2[(Open-Meteo Forecast)]
   GV -->|"fetch /countries-110m.geojson"| ASSET[(Static asset)]
   UC <-->|read/write| LS[(localStorage: world-time:v2)]
+  WT <-->|read/write| LSV[(localStorage: world-time:view)]
 ```
 
 Data flow: user input → `useConverter` (the single state store) → derived `rows[]`
 (each city's formatted time, hour diff, source flag) → consumed identically by the
-globe (arcs) and the converter panel (hero, timeline). Adding/removing a city or
+dial or the globe (left) and the converter panel (hero, timeline). The dial is
+also an input: dragging its ring or turning its crown calls the same
+`pickInstant` / `goLive` as the timeline and the "Now" button. Adding/removing a city or
 changing the source updates both halves in lock-step.
 
 ---
@@ -107,8 +117,9 @@ This is a single frontend app — no microservices or workers. Its internal modu
 | **App shell** | Mounts React, renders the two-column layout (globe left, converter right; stacks on mobile) | `main.tsx` → `App.tsx` → `WorldTime.tsx` |
 | **State core** | `useConverter` hook: source city, target cities, date/time, 12/24h, live-tick, derived `rows[]`. Single source of truth shared by both columns. | `useConverter.ts` |
 | **Timezone engine** | Wall-clock↔instant conversion, DST-correct, using only the `Intl` API (zero deps). Offset-probe trick for "wall time in zone X → absolute instant". | `timezone.ts` |
-| **Globe** | Auto-rotating dark 3D globe with glowing great-circle arcs from source → each target, city dots/labels, atmosphere. | `GlobeView.tsx` |
-| **Converter panel** | Hero source time (editable), live weather, From/Date/24h controls, "best overlap" suggestion, the planner timeline, and add-city control. | `ConverterPanel.tsx` |
+| **World-time dial** | Default left-column view: a "world timer" watch face. Source city at 12 o'clock, other cities 15° per hour of offset, a 24 h ring (night / day / 09–17 working arc) that turns under them. The crown is the mode switch: in = live, and the dial only shows the time (trying to set it nudges the crown as a hint); out = planning (seconds hand stops), then drag the ring, drag the crown up/down (it visibly turns), wheel or ← →, all in 15-min steps. Phones (< 420 px dial) get larger, name-only labels; the page scrolls over the dial while live. | `WorldDial.tsx`, `dialModel.ts`, `useDialInput.ts`, `useDialMotion.ts` |
+| **Globe** | Alternative left-column view (Dial ⇄ Globe toggle). Auto-rotating dark 3D globe with glowing great-circle arcs from source → each target, city dots/labels, atmosphere. | `GlobeView.tsx` |
+| **Converter panel** | Hero source time (editable); the hero city and date are the source/date controls (click to change); live weather; a plain 12h/24h + Share line; a one-line "best overlap" suggestion; the planner timeline with "+ Add city" under the rows. | `ConverterPanel.tsx` |
 | **Planner timeline** | Per-city 24h track with working-hour bands projected onto the source-day axis, orange "now" line, dashed "planned" line, click-to-set, off-day date labels. | `MeetingTimeline.tsx` |
 | **City search** | Bundled cities (instant/offline) merged with live Open-Meteo geocoding for any city worldwide; dedupe by coordinate. | `CitySearch.tsx`, `geocode.ts`, `cities.ts` |
 | **Weather** | One batched forecast call for all visible cities, WMO-code decoding, 30-min module cache. | `useWeather.ts`, `weather.ts` |
@@ -128,6 +139,8 @@ No databases, caches, or queues. Client-side persistence/state only:
 | Store | Technology | Purpose / contents |
 |---|---|---|
 | **`localStorage["world-time:v2"]`** | Browser localStorage (JSON) | Durable preferences: `{ source: City, targets: City[], hour12: boolean }`. Full `City` objects are stored so searched cities survive reloads. Date/time intentionally reset each visit (per-task). Corrupt/missing data falls back to defaults; validated via `isCity()`. |
+| **`localStorage["world-time:view"]`** | Browser localStorage (string) | Left-column view: `"dial"` (default) or `"globe"`. Anything else falls back to the dial. |
+| **`localStorage["world-time:theme"]`** | Browser localStorage (string) | Active theme id (applied before paint in `index.html`). |
 | **Weather cache** | In-memory `Map` (module scope) in `useWeather.ts` | Per-coordinate weather with 30-min TTL; survives remounts within a session, never persisted. |
 | **`public/countries-110m.geojson`** | Static GeoJSON asset (177 country features) | Faint country landmasses rendered under the globe arcs. Fetched once at runtime. |
 

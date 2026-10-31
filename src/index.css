@@ -163,6 +163,32 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   width: max-content;
 }
 
+/* World-time dial: the crown jumps outwards when someone tries to set the time
+   while it is pushed in ("pull me first"). */
+@keyframes dial-crown-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(9px);
+  }
+  50% {
+    transform: translateX(1px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+.dial-crown-nudge {
+  animation: dial-crown-nudge 600ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dial-crown-nudge {
+    animation: none;
+  }
+}
+
 /* ── Footer (borrowed from curator-board) ──────────────────────────────────── */
 .board-footer {
   display: flex;
