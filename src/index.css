@@ -189,42 +189,36 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
-/* ── Footer (borrowed from curator-board) ──────────────────────────────────── */
+/* ── Footer (borrowed from curator-board, quietened) ─────────────────────────
+   One muted line: links on the left, theme trigger on the right. No boxes;
+   colour only on hover. */
 .board-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 16px 8px 8px;
+  font-size: 12px;
 }
 .board-footer-links {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-@media (max-width: 639px) {
-  .board-footer-links {
-    flex-direction: row;
-    gap: 12px;
-  }
+  align-items: center;
+  gap: 20px;
 }
 .board-footer-link {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  gap: 6px;
+  color: var(--muted);
   text-decoration: none;
-  text-transform: uppercase;
   transition: color 140ms ease;
 }
 .board-footer-link:hover {
-  color: var(--accent-strong);
+  color: var(--accent);
 }
 .board-footer-icon {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
 }
 
@@ -232,27 +226,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .theme-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--background) 92%, transparent);
-  color: var(--foreground);
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
   font-size: 12px;
-  letter-spacing: 0.06em;
   cursor: pointer;
-  backdrop-filter: blur(10px);
   flex-shrink: 0;
-  transition: border-color 140ms ease;
+  transition: color 140ms ease;
+}
+.theme-trigger:hover {
+  color: var(--foreground);
 }
 .theme-trigger-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-wash);
 }
 .theme-trigger-hint {
   color: var(--muted-soft);
+  font-family: "Space Mono", ui-monospace, monospace;
   font-size: 11px;
 }
 .theme-overlay {
@@ -353,7 +348,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   padding: 8px 10px;
   cursor: pointer;
 }
-.theme-close:hover,
-.theme-trigger:hover {
+.theme-close:hover {
   border-color: var(--line-strong);
 }
