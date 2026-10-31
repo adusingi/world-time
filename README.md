@@ -12,7 +12,8 @@ with a "best overlap" suggestion, live weather, and switchable themes.
 
 - ⌚ **World-time dial** — a "world timer" watch face: your city at 12 o'clock, every
   other city around the ring, a turning 24 h ring with day/night and working hours.
-  Drag the ring to plan a meeting; pull the crown to plan, push it to go back to now.
+  The crown is the mode switch: click it out to plan, then drag the ring or turn the
+  crown; click it back in to return to now.
 - 🌍 **Rotating 3D globe** (Dial ⇄ Globe toggle) with great-circle arcs from the
   source city to every target.
 - 📍 **Auto-locates you** on first visit (Cloudflare edge geolocation) — falls back to

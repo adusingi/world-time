@@ -119,6 +119,11 @@ Dial ⇄ Globe in the left column).
 ### Done ✅
 - [x] `src/WorldDial.tsx` + `src/dialModel.ts` + `src/useDialInput.ts` +
       `src/useDialMotion.ts` — rewritten from the prototype for production
+- [x] Crown = mode switch (like a real watch): crown in locks the ring, the
+      wheel and the arrows, and nudges the crown + shows "CLICK THE CROWN ›"
+      when someone tries; crown out unlocks them, and the crown can be dragged
+      up/down to turn the time. The knurled crown turns a third of a groove
+      per 15 min with every control (a whole groove would look unchanged)
 - [x] `src/ViewToggle.tsx` — Dial ⇄ Globe segmented toggle; choice persists in
       `localStorage["world-time:view"]` (default: dial)
 - [x] `src/WorldTime.tsx` — left column shows the dial or the globe
@@ -130,9 +135,11 @@ Dial ⇄ Globe in the left column).
 
 **Test checklist**
 - [x] `pnpm build` passes (tsc + vite build green)
-- [x] Ring drag (−3 h for +45°), ← (+15 min), wheel with crown out, "Best
-      overlap" turns the ring, crown click returns to live, Globe choice
-      survives a reload, no console errors
+- [x] Crown in: ring drag, ← and wheel change nothing and show the hint
+- [x] Crown out: ring drag (−3 h for +45°), crown drag up 30 (+75 min) and
+      down 12 (−30 min), wheel (+15 min), Shift+← (−1 h); grooves move with
+      each step; "Best overlap" turns the ring; crown click returns to live;
+      Globe choice survives a reload; no console errors
 - [x] Screenshots: 1440×900 dark, 1280×720 paper, 390×844 phone
 
 **Exit criteria:** The dial is the default left view, stays in sync with the

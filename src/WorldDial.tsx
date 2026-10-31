@@ -19,8 +19,8 @@ import { useDialInput, VIEW } from "./useDialInput.ts";
 // The world-time dial: a "world timer" watch face driven by the converter.
 // The source city sits at 12 o'clock; a 24-hour ring (night, day, working
 // hours) turns under the cities, so a city is at work when its marker sits
-// over the green arc. The crown is the "Now" control: in = live, out =
-// planning. See useDialInput for every gesture.
+// over the green arc. The crown is the mode switch: in = live (the dial only
+// shows the time), out = planning. See useDialInput for every gesture.
 
 const SOURCE = "#fbbf24"; // same amber as the source city on the globe
 const R = { case: 212, cityIn: 158, ringOut: 154, ringIn: 114, num: 134, glyph: 121, face: 108 };
@@ -135,24 +135,33 @@ function SecondsHand() {
   return <Hand angle={useSecondsAngle()} length={100} tail={20} width={1.2} className="stroke-accent" />;
 }
 
-function Crown({ out, onToggle }: { out: boolean; onToggle: () => void }) {
+// The crown seen from the side: a knurled cylinder. `turn` is counted in
+// grooves; grooves on the far side are hidden and the near ones fade towards
+// the edges, so it reads as round.
+// `hint` remounts the group, which replays the "pull me first" nudge.
+const GROOVES = 16;
+function Crown({ out, turn, hint }: { out: boolean; turn: number; hint: number }) {
+  const x0 = R.case + (out ? 13 : 1);
+  const half = 14;
   return (
-    <g data-crown onClick={onToggle} className="cursor-pointer">
-      <title>{out ? "Push the crown: back to now" : "Pull the crown: plan a time"}</title>
+    <g key={hint} data-crown className={`cursor-pointer ${hint ? "dial-crown-nudge" : ""}`}>
+      <title>{out ? "Drag up or down to turn · click to go back to now" : "Click to plan a time"}</title>
       <rect x={R.case - 2} y={-4} width={out ? 16 : 4} height={8} rx={1} className="fill-muted-soft" />
-      <rect
-        x={R.case + (out ? 13 : 1)} y={-14} width={13} height={28} rx={3}
-        className={out ? "fill-accent" : "fill-muted"}
-        style={{ transition: "x 180ms ease" }}
-      />
-      {[-9, -4.5, 0, 4.5, 9].map((y) => (
-        <line
-          key={y} x1={R.case + (out ? 15 : 3)} x2={R.case + (out ? 24 : 12)} y1={y} y2={y}
-          strokeWidth={0.8} style={{ stroke: "var(--background)", opacity: 0.5 }}
-        />
-      ))}
+      <rect x={x0} y={-half} width={13} height={2 * half} rx={3} className={out ? "fill-accent" : "fill-muted"} />
+      {Array.from({ length: GROOVES }, (_, i) => {
+        const a = (((turn + i) * 360) / GROOVES) * (Math.PI / 180);
+        const facing = Math.cos(a);
+        if (facing < 0.08) return null;
+        const y = -(half - 2.5) * Math.sin(a); // later = grooves move up
+        return (
+          <line
+            key={i} x1={x0 + 2} x2={x0 + 11} y1={y} y2={y} strokeWidth={0.9}
+            style={{ stroke: "var(--background)", opacity: 0.15 + 0.5 * facing }}
+          />
+        );
+      })}
       {/* generous hit area */}
-      <rect x={R.case} y={-22} width={44} height={44} fill="transparent" />
+      <rect x={R.case} y={-24} width={46} height={48} fill="transparent" />
     </g>
   );
 }
@@ -177,6 +186,15 @@ export function WorldDial({ conv, className }: { conv: Converter; className?: st
   }, [cities, style, fontsVersion]);
 
   const rot = useRingRotation(sourceHours, input.dragging);
+
+  // "CLICK THE CROWN ›" replaces "● LIVE" for a moment after each hint.
+  const [hinting, setHinting] = useState(false);
+  useEffect(() => {
+    if (!input.hint) return;
+    setHinting(true);
+    const id = setTimeout(() => setHinting(false), 1600);
+    return () => clearTimeout(id);
+  }, [input.hint]);
   const shownHours = mod(-rot / 15, 24);
   const at = (h: number) => rot + 15 * h; // ring angle of hour h
   const source = conv.rows.find((r) => r.isSource)!;
@@ -195,7 +213,9 @@ export function WorldDial({ conv, className }: { conv: Converter; className?: st
       aria-valuetext={`${source.city.city} ${source.fmt.time}${conv.live ? ", live" : ""}`}
       {...input.handlers}
     >
-      <Crown out={!conv.live} onToggle={input.toggleCrown} />
+      {/* A third of a groove per 15 minutes (3.75° of ring): a whole groove per
+          step would look unchanged after every step. Follows the ring's tween. */}
+      <Crown out={!conv.live} turn={-rot / 3.75 / 3} hint={input.hint} />
 
       {/* case + fixed city ring */}
       <circle r={R.case} className="dial-case fill-panel stroke-line" strokeWidth={1.5} />
@@ -243,7 +263,7 @@ export function WorldDial({ conv, className }: { conv: Converter; className?: st
         y={-44} textAnchor="middle" dominantBaseline="central" fontSize={compact ? 12 : 10}
         letterSpacing="0.25em" className={conv.live ? "fill-accent" : "fill-muted"}
       >
-        {conv.live ? "● LIVE" : "PLANNING"}
+        {conv.live ? (hinting ? "CLICK THE CROWN ›" : "● LIVE") : "PLANNING"}
       </text>
       <text
         y={50} textAnchor="middle" dominantBaseline="central" fontSize={compact ? 11.5 : 9.5}
@@ -263,7 +283,7 @@ export function WorldDial({ conv, className }: { conv: Converter; className?: st
 export function DialHint({ className }: { className?: string }) {
   return (
     <p className={`text-center text-xs text-muted-soft ${className ?? ""}`}>
-      Drag the ring to plan · click the crown for now
+      Click the crown to plan · then drag the ring or the crown
     </p>
   );
 }
