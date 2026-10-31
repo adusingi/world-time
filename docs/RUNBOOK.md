@@ -1,5 +1,5 @@
 # RUNBOOK — World Time
-*Last updated: 2026-06-27*
+*Last updated: 2026-10-31*
 
 > World Time is a static, client-only SPA (no database, no API service, no Docker).
 > This runbook covers local dev, build, and deploy to Cloudflare Pages.
@@ -58,8 +58,10 @@ works without further config. Restart `pnpm dev` after changing `allowedHosts`.
 pnpm dev        # Dev server with hot reload
 pnpm build      # Type-check (tsc -b) + production build → dist/
 pnpm preview    # Serve the production build locally
-pnpm deploy     # build, then wrangler pages deploy
 ```
+
+> Deploying is a `git push` (see [Deploy](#deploy-cloudflare-pages)), not a
+> script.
 
 > There is no separate `lint`/`test` script. The CI gate is `pnpm build`
 > (which runs `tsc -b` in strict mode and then `vite build`).
@@ -82,18 +84,52 @@ pnpm build
 
 ## Deploy (Cloudflare Pages)
 
+The Pages project `meeting-mobayilo` uses Cloudflare's **Git integration**
+(`wrangler pages project list` shows "Git Provider: Yes"). Cloudflare builds
+every push to GitHub, so **a push is the deploy**:
+
+| Push to | Cloudflare deploys to | URL |
+|---|---|---|
+| `main` | Production | https://meeting.mobayilo.com |
+| any other branch (e.g. `development`) | Preview | `https://<id>.meeting-mobayilo.pages.dev` |
+
+Build settings (Cloudflare dashboard): build command `pnpm run build`, output
+directory `dist`.
+
+### Release
 ```bash
-pnpm deploy        # = pnpm build && wrangler pages deploy
+# 1. Features are merged into development; push it → preview build
+git push origin development
+
+# 2. Check the preview (URL from the deployment list below), then promote
+git switch main
+git merge --ff-only development
+git push origin main            # → production build (about 1 minute)
 ```
+
+### Check a deployment
+```bash
+pnpm exec wrangler pages deployment list --project-name meeting-mobayilo
+pnpm exec wrangler pages deployment list --project-name meeting-mobayilo --environment production
+```
+Then run the [health checks](#health-checks).
 
 - Hosting and project config live in `wrangler.jsonc`.
 - The edge geolocation endpoint is `functions/geo.js` (a Pages Function),
   deployed automatically with the static assets.
-- Production URL: https://meeting.mobayilo.com
+
+### Manual fallback (normally not needed)
+```bash
+pnpm run deploy    # = build, then wrangler pages deploy (uploads dist/)
+```
+> Use `pnpm run deploy`, **not** `pnpm deploy`: `pnpm deploy` is a pnpm
+> built-in command and does not run this script. Cloudflare allows manual
+> deployments to Git-integrated projects, but this path is not tested for this
+> project — prefer a push.
 
 ### First-time / auth
 ```bash
-wrangler login     # one-time browser auth for the Cloudflare account
+pnpm exec wrangler login   # one-time browser auth, needed for the wrangler checks
 ```
 
 ---

@@ -173,12 +173,16 @@ degradation (failures resolve to null → badges simply hide).
   config: `meeting-mobayilo` (`wrangler.jsonc`).
 - **Build output:** `dist/` (`pages_build_output_dir: "dist"`); compatibility date `2026-06-16`.
 - **Build:** `npm run build` → `tsc -b` (type-check) then `vite build`.
-- **Deploy:** `npm run deploy` → `npm run build && wrangler pages deploy`.
+- **Deploy:** Cloudflare Pages **Git integration** — Cloudflare builds every push
+  to GitHub: `main` → production (https://meeting.mobayilo.com), other branches →
+  preview (`<id>.meeting-mobayilo.pages.dev`). `npm run deploy` (`wrangler pages
+  deploy` of `dist/`) is only an untested manual fallback. See `docs/RUNBOOK.md`.
 - **Promotion flow (convention):** feature branch → `development` → fast-forward
   `main`. Pushing `main` to GitHub (`origin`) is what publishes production.
 - **Containers:** none (no Docker).
-- **CI/CD:** none committed (no `.github/workflows`, Jenkinsfile, etc.). The
-  effective pre-push gate is a green `npm run build` (TS strict + Vite). There is
+- **CI/CD:** no pipeline committed (no `.github/workflows`, Jenkinsfile, etc.);
+  Cloudflare's Git integration runs the build on each push. The effective
+  pre-push gate is a green `npm run build` (TS strict + Vite). There is
   no `lint` or `test` script.
 - **Monitoring/logging:** none configured (relies on Cloudflare Pages defaults).
 
@@ -219,7 +223,7 @@ npm ci          # or: npm install
 npm run dev      # Vite dev server (default http://localhost:5173)
 npm run build    # tsc -b && vite build  → dist/
 npm run preview  # serve the production build locally
-npm run deploy   # build + wrangler pages deploy (Cloudflare)
+# deploy = git push (main → production); see docs/RUNBOOK.md
 ```
 
 **Testing:** no test framework or tests are present. Verification during
