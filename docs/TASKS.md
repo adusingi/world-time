@@ -110,6 +110,36 @@ stacking contexts. ✅
 
 ---
 
+## ✅ World-Time Dial — 2026-10-31
+**Objective:** Show the cities on a "world timer" watch dial that is also a
+planning control. Picked from the `prototype/watch` UI prototype (variant A:
+Dial ⇄ Globe in the left column).
+**Branch:** `feat/world-dial` (stacked on `feat/converter-declutter`)
+
+### Done ✅
+- [x] `src/WorldDial.tsx` + `src/dialModel.ts` + `src/useDialInput.ts` +
+      `src/useDialMotion.ts` — rewritten from the prototype for production
+- [x] `src/ViewToggle.tsx` — Dial ⇄ Globe segmented toggle; choice persists in
+      `localStorage["world-time:view"]` (default: dial)
+- [x] `src/WorldTime.tsx` — left column shows the dial or the globe
+- [x] Prototype limits fixed: page scrolls over the dial while live
+      (`touch-pan-y`), the dial takes touches with the crown out; dials under
+      420 px get larger, name-only labels; label widths are measured with the
+      real fonts; the 8 Hz seconds hand re-renders only itself
+- [x] README + ARCHITECTURE updated
+
+**Test checklist**
+- [x] `pnpm build` passes (tsc + vite build green)
+- [x] Ring drag (−3 h for +45°), ← (+15 min), wheel with crown out, "Best
+      overlap" turns the ring, crown click returns to live, Globe choice
+      survives a reload, no console errors
+- [x] Screenshots: 1440×900 dark, 1280×720 paper, 390×844 phone
+
+**Exit criteria:** The dial is the default left view, stays in sync with the
+hero, timeline and globe, and works with mouse, keyboard and touch. ✅
+
+---
+
 ## ✅ Converter Declutter — 2026-10-31
 **Objective:** Cut the visual noise in the converter column: fewer borders,
 related controls grouped.

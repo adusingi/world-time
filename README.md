@@ -1,8 +1,8 @@
 # World Time
 
-An interactive world-clock and meeting planner. A rotating 3D globe draws glowing
-arcs from your city to every other, alongside a working-hours timeline with a
-"best overlap" suggestion, live weather, and switchable themes.
+An interactive world-clock and meeting planner. A world-time watch dial (or a
+rotating 3D globe) shows every city at once, alongside a working-hours timeline
+with a "best overlap" suggestion, live weather, and switchable themes.
 
 **Live:** https://meeting.mobayilo.com
 
@@ -10,7 +10,11 @@ arcs from your city to every other, alongside a working-hours timeline with a
 
 ## Features
 
-- 🌍 **Rotating 3D globe** with great-circle arcs from the source city to every target.
+- ⌚ **World-time dial** — a "world timer" watch face: your city at 12 o'clock, every
+  other city around the ring, a turning 24 h ring with day/night and working hours.
+  Drag the ring to plan a meeting; pull the crown to plan, push it to go back to now.
+- 🌍 **Rotating 3D globe** (Dial ⇄ Globe toggle) with great-circle arcs from the
+  source city to every target.
 - 📍 **Auto-locates you** on first visit (Cloudflare edge geolocation) — falls back to
   your country's capital, then Okayama. No permission prompt.
 - 🔎 **Add any city worldwide** via free, keyless geocoding (Open-Meteo).
@@ -61,7 +65,10 @@ pnpm preview        # serve the production build locally
 functions/geo.js     Cloudflare Pages Function — visitor geo from request.cf
 public/              Static assets (world country polygons for the globe)
 src/
-  WorldTime.tsx      Two-column shell (globe | converter + footer)
+  WorldTime.tsx      Two-column shell (dial or globe | converter + footer)
+  ViewToggle.tsx     Dial ⇄ Globe toggle (choice persists)
+  WorldDial.tsx      World-time watch dial (+ dialModel.ts, useDialInput.ts,
+                     useDialMotion.ts)
   GlobeView.tsx      react-globe.gl globe, arcs, theme-aware accent
   ConverterPanel.tsx Hero clock, controls, best-overlap, add-city
   MeetingTimeline.tsx Working-hour timeline with now/planned lines
