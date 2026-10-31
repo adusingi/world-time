@@ -40,14 +40,22 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Inline-editable text in the hero: a dotted underline is the only affordance.
-const editable =
-  "underline decoration-dotted decoration-muted-soft underline-offset-4 transition hover:text-fg hover:decoration-accent";
+// Inline-editable text in the hero: plain at rest, underlined on hover.
+const editable = "underline-offset-4 decoration-accent transition hover:underline";
 
 function LinkIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" strokeLinecap="round" />
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true" className="shrink-0 text-accent">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7.5V12l3 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -90,17 +98,23 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
         <button
           onClick={conv.goLive}
           disabled={conv.live}
-          className="mb-3 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.3em] text-muted transition enabled:hover:text-accent-strong"
+          className="mb-3 inline-flex flex-wrap items-center justify-center gap-x-2.5 text-xs font-medium uppercase tracking-[0.3em] text-muted transition enabled:hover:text-fg"
           title={conv.live ? "Following the current time" : "Snap back to now"}
         >
           <span
             className={
               conv.live
-                ? "h-2 w-2 rounded-full bg-accent"
+                ? "h-2 w-2 rounded-full bg-accent shadow-[0_0_0_4px_var(--accent-wash)]"
                 : "h-2 w-2 rounded-full bg-muted-soft"
             }
           />
-          Now
+          {conv.live ? (
+            <span>Right now in {source.city.city}</span>
+          ) : (
+            <span>
+              Planned in {source.city.city} <span className="text-accent">· Back to now</span>
+            </span>
+          )}
         </button>
 
         <div className="flex items-center justify-center">
@@ -113,7 +127,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
         </div>
 
         {/* source city · date — both editable in place */}
-        <div className="mt-2 flex min-h-8 flex-wrap items-center justify-center gap-x-2 text-muted">
+        <div className="mt-2 flex min-h-8 flex-wrap items-center justify-center gap-x-3 text-muted">
           {editingSource ? (
             <div className="w-44 text-left">
               <CitySearch
@@ -129,7 +143,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
               />
             </div>
           ) : (
-            <button onClick={() => setEditingSource(true)} className={editable} title="Change city">
+            <button onClick={() => setEditingSource(true)} className={`font-semibold text-fg ${editable}`} title="Change city">
               {source.city.city}
             </button>
           )}
@@ -153,51 +167,59 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
           </div>
         )}
 
-        {/* settings: clock format + share, as plain text buttons */}
+        {/* settings: clock format (the active one framed) + share */}
         <div className="mt-5 flex items-center justify-center gap-4 text-sm">
-          <div className="flex gap-3" role="group" aria-label="Clock format">
+          <div className="flex gap-1" role="group" aria-label="Clock format">
             {[false, true].map((h12) => (
               <button
                 key={String(h12)}
                 onClick={() => conv.setHour12(h12)}
                 aria-pressed={conv.hour12 === h12}
-                className={
+                className={`rounded-lg border px-3 py-1.5 ${
                   conv.hour12 === h12
-                    ? "font-medium text-fg"
-                    : "text-muted-soft transition hover:text-muted"
-                }
+                    ? "border-accent/25 bg-accent/10 text-fg"
+                    : "border-transparent text-muted-soft transition hover:text-muted"
+                }`}
               >
                 {h12 ? "12h" : "24h"}
               </button>
             ))}
           </div>
-          <span className="h-4 w-px bg-line" aria-hidden="true" />
+          <span className="h-5 w-px bg-line" aria-hidden="true" />
           <button
             onClick={share}
-            className="inline-flex items-center gap-1.5 text-muted transition hover:text-accent"
+            className="inline-flex items-center gap-2 px-1 text-muted transition hover:text-accent"
             title="Copy a link that opens these cities"
           >
             {copied ? <span aria-hidden="true">✓</span> : <LinkIcon />}
-            {copied ? "Link copied" : "Share"}
+            {copied ? "Link copied" : "Share plan"}
           </button>
         </div>
       </div>
 
-      {/* planner group */}
-      <button
-        onClick={() => conv.pickInstant(new Date(conv.sourceDayStart.getTime() + overlap.hour * 3_600_000))}
-        className="mb-5 flex items-center gap-2 text-left text-sm text-muted transition hover:text-fg"
-        title="Plan the meeting at this hour"
-      >
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-        <span>
-          Best overlap{" "}
-          <span className="font-mono-slab text-accent-strong">
-            {pad(overlap.hour)}:00–{pad((overlap.hour + 1) % 24)}:00
-          </span>{" "}
-          · {overlap.count} of {conv.rows.length} cities in working hours
-        </span>
-      </button>
+      {/* planner group: the best-overlap card sits above the timeline, on the right */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={() => conv.pickInstant(new Date(conv.sourceDayStart.getTime() + overlap.hour * 3_600_000))}
+          className="flex w-full items-center gap-4 rounded-2xl border border-accent/20 bg-accent/[0.06] px-5 py-3 text-left transition hover:border-accent/40 sm:w-auto"
+          title="Plan the meeting at this hour"
+        >
+          <ClockIcon />
+          <span className="flex flex-col">
+            <span className="text-sm text-muted">Best overlap</span>
+            <span className="font-mono-slab whitespace-nowrap font-bold text-accent-strong">
+              {pad(overlap.hour)}:00 – {pad((overlap.hour + 1) % 24)}:00
+            </span>
+            {/* phones: the count goes under the time instead of beside it */}
+            <span className="text-sm text-muted sm:hidden">
+              {overlap.count} of {conv.rows.length} in work hours
+            </span>
+          </span>
+          <span className="ml-auto hidden whitespace-nowrap pl-4 text-sm text-muted sm:inline">
+            {overlap.count} of {conv.rows.length} in work hours
+          </span>
+        </button>
+      </div>
 
       <MeetingTimeline conv={conv}>
         {adding ? (
