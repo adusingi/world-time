@@ -110,6 +110,40 @@ stacking contexts. ✅
 
 ---
 
+## ✅ World-Time Dial: Polar Map + Reference Cities — 2026-10-31
+**Objective:** Make the dial a real world-timer face: a map of the continents
+inside, and well-known cities on the ring by default, with the user's own
+cities taking priority. Inspired by the Frederique Constant Classic Worldtimer.
+**Branch:** `feat/dial-world-map`
+
+### Done ✅
+- [x] `src/DialMap.tsx` + `src/dialMap.ts` — north-polar azimuthal map (round,
+      cut at 60°S) turned so the source longitude points up; land from
+      `countries-110m.geojson` (Antarctica skipped: it would wrap the disc);
+      equator; night shadow from the sun's position at the shown time (NOAA
+      approximation), soft edge; dots for the user's cities (source amber)
+- [x] Dial direction flipped to match the map: east is counter-clockwise, the
+      ring's numbers run counter-clockwise and the ring turns clockwise, so the
+      map's night shadow turns with the ring's night half; ring drag flipped
+- [x] `src/referenceCities.ts` — 24 zones + fill-ins, priority order for DST
+      collisions; user cities hide references within 11°; references are
+      placed after user labels and dropped if they would collide
+- [x] `src/DialParts.tsx` — drawing parts split out of `WorldDial.tsx`; face
+      text uses a halo instead of a pill; "● LIVE" moved below the centre
+      (the source dot always sits above it); home-city face text removed
+- [x] `src/index.css` — `--dial-land` / `--dial-night` per dark/light theme
+
+**Test checklist**
+- [x] `pnpm build` passes
+- [x] Ring drag +45° → +3 h; "Best overlap" turns ring and night shadow;
+      references give way to user cities; no console errors
+- [x] Screenshots: dark (3 and 8 cities), paper (8 cities), 390 px phone
+
+**Exit criteria:** The face is a recognisable round world map whose cities and
+night shadow line up with the ring. ✅
+
+---
+
 ## ✅ Footer Declutter — 2026-10-31
 **Objective:** Same "less noise" pass for the footer.
 **Branch:** `feat/footer-declutter` (stacked on `feat/world-dial`)

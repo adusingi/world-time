@@ -1,4 +1,5 @@
 import type { Row } from "./useConverter.ts";
+import { REFERENCE_CITIES } from "./referenceCities.ts";
 
 // Geometry of the world-time dial, a "world timer" watch complication. The
 // source city is fixed at 12 o'clock; every other city sits 15° per hour of
@@ -6,6 +7,9 @@ import type { Row } from "./useConverter.ts";
 // each city reads its own local hour off the ring.
 //
 // Angles are degrees, 0 = 12 o'clock, increasing clockwise (SVG y points down).
+// East runs COUNTER-clockwise, as on Earth seen from above the North Pole: the
+// face is a north-polar map, so each city's marker sits on the same ray as the
+// city itself, and the ring turns clockwise as the day goes on.
 
 export const WORK_START = 9;
 export const WORK_END = 17;
@@ -72,6 +76,7 @@ export function wallClock(instant: Date, tz: string): { hours: number; date: str
 
 export type DialCity = {
   key: string;
+  reference: boolean; // a printed reference city, not one of the user's
   names: string[]; // cities sharing one offset share one marker
   angle: number; // fixed position on the city ring
   time: string; // local time, already formatted for 12/24h
@@ -87,7 +92,7 @@ export function dialCities(rows: Row[], instant: Date): { sourceHours: number; c
 
   for (const r of rows) {
     const wall = wallClock(instant, r.city.tz);
-    const angle = wrap180(15 * (wall.hours - srcWall.hours));
+    const angle = wrap180(-15 * (wall.hours - srcWall.hours));
     const key = (Math.round(angle * 2) / 2).toString();
     const g = groups.get(key);
     if (g) {
@@ -99,6 +104,7 @@ export function dialCities(rows: Row[], instant: Date): { sourceHours: number; c
     }
     groups.set(key, {
       key,
+      reference: false,
       names: [r.city.city],
       angle,
       time: r.fmt.time,
@@ -110,6 +116,37 @@ export function dialCities(rows: Row[], instant: Date): { sourceHours: number; c
   return { sourceHours: srcWall.hours, cities: [...groups.values()] };
 }
 
+// Reference cities for the outer ring: one per UTC hour slot (first in
+// REFERENCE_CITIES wins a slot), skipping any that sit near one of the user's
+// cities, since the user's city takes priority.
+const hhmm = (h: number) =>
+  `${String(Math.floor(h)).padStart(2, "0")}:${String(Math.round((h % 1) * 60) % 60).padStart(2, "0")}`;
+
+export function referenceCities(instant: Date, sourceHours: number, user: DialCity[]): DialCity[] {
+  const utc = wallClock(instant, "UTC").hours;
+  const slots = new Set<number>();
+  const out: DialCity[] = [];
+  for (const city of REFERENCE_CITIES) {
+    const wall = wallClock(instant, city.tz);
+    const offset = ((wall.hours - utc + 36) % 24) - 12; // [-12, 12); +13 lands on -11
+    const slot = (((Math.round(offset) % 24) + 24) % 24);
+    const angle = wrap180(-15 * (wall.hours - sourceHours));
+    if (slots.has(slot) || user.some((u) => Math.abs(wrap180(u.angle - angle)) < 11)) continue;
+    slots.add(slot);
+    out.push({
+      key: city.id,
+      reference: true,
+      names: [city.city],
+      angle,
+      time: hhmm(wall.hours),
+      dayShift: 0,
+      isSource: false,
+      working: false,
+    });
+  }
+  return out;
+}
+
 // ── City labels ────────────────────────────────────────────────────────────
 // Labels ("PARIS +1 01:49") run along two tracks of the outer ring. Neighbours
 // one hour apart sit only 15° apart, so each label takes the first track where
@@ -117,34 +154,48 @@ export function dialCities(rows: Row[], instant: Date): { sourceHours: number; c
 
 export const LABEL_TRACKS = [198, 177];
 
-export type LabelStyle = { nameSize: number; timeSize: number; showTime: boolean; maxChars: number };
+export type LabelStyle = {
+  nameSize: number;
+  timeSize: number;
+  refSize: number; // reference-city names: smaller, quieter
+  showTime: boolean;
+  maxChars: number;
+};
 
 // A small dial (phones) drops the per-city time, which the timeline shows
 // anyway, so the names can be larger without colliding.
 export const LABEL_STYLES: Record<"regular" | "compact", LabelStyle> = {
-  regular: { nameSize: 11, timeSize: 10.5, showTime: true, maxChars: 11 },
-  compact: { nameSize: 14, timeSize: 0, showTime: false, maxChars: 11 },
+  regular: { nameSize: 11, timeSize: 10.5, refSize: 8.5, showTime: true, maxChars: 11 },
+  compact: { nameSize: 14, timeSize: 0, refSize: 11, showTime: false, maxChars: 11 },
 };
 
 export function labelText(c: DialCity, maxChars: number): string {
+  if (c.reference) return c.names[0].toUpperCase(); // never truncated: it drops instead
   const first = c.names[0];
   const name = first.length > maxChars ? `${first.slice(0, maxChars - 1)}…` : first;
   return `${name.toUpperCase()}${c.names.length > 1 ? ` +${c.names.length - 1}` : ""}`;
 }
 
 /** Assign each label a track radius. `widthOf` returns a label's width in
- *  viewBox units. */
+ *  viewBox units. The user's cities always get a track; reference cities are
+ *  placed afterwards, in priority order, and dropped if they would collide. */
 export function placeLabels(
   cities: DialCity[],
   widthOf: (c: DialCity) => number,
 ): (DialCity & { r: number })[] {
   const halfSpan = (c: DialCity, r: number) => ((widthOf(c) / 2 / r) * 180) / Math.PI;
-  // Source first (it takes the outer track at 12 o'clock), then by angle.
-  const order = [...cities].sort((a, b) =>
-    a.isSource ? -1 : b.isSource ? 1 : wrap180(a.angle + 180) - wrap180(b.angle + 180),
-  );
+  // Source first (it takes the outer track at 12 o'clock), then the user's
+  // cities by angle, then the references as given.
+  const user = cities.filter((c) => !c.reference);
+  const order = [
+    ...user.sort((a, b) =>
+      a.isSource ? -1 : b.isSource ? 1 : wrap180(a.angle + 180) - wrap180(b.angle + 180),
+    ),
+    ...cities.filter((c) => c.reference),
+  ];
   const placed: { angle: number; half: number; track: number }[] = [];
-  return order.map((c) => {
+  const out: (DialCity & { r: number })[] = [];
+  for (const c of order) {
     let best = 0;
     let bestOverlap = Infinity;
     for (let track = 0; track < LABEL_TRACKS.length; track++) {
@@ -155,7 +206,9 @@ export function placeLabels(
       if (overlap < bestOverlap) [best, bestOverlap] = [track, overlap];
       if (overlap === 0) break;
     }
+    if (c.reference && bestOverlap > 0) continue;
     placed.push({ angle: c.angle, half: halfSpan(c, LABEL_TRACKS[best]), track: best });
-    return { ...c, r: LABEL_TRACKS[best] };
-  });
+    out.push({ ...c, r: LABEL_TRACKS[best] });
+  }
+  return out;
 }
