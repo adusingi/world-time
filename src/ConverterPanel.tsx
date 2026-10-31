@@ -40,15 +40,33 @@ function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-// Right column: the converter. Hero source time, quick controls, a "best
-// overlap" suggestion, the planner timeline, and an add-city control. Shares
-// `conv` with the globe so the two halves stay in sync.
+// Inline-editable text in the hero: a dotted underline is the only affordance.
+const editable =
+  "underline decoration-dotted decoration-muted-soft underline-offset-4 transition hover:text-fg hover:decoration-accent";
+
+function LinkIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// Right column: the converter. Hero source time, a quiet settings line, then
+// the planner group: "best overlap", the timeline and "Add city". Few borders
+// on purpose: the source city and the date in the hero line are the controls.
+// Shares `conv` with the globe so the two halves stay in sync.
 export function ConverterPanel({ conv }: { conv: Converter }) {
   const source = conv.rows.find((r) => r.isSource)!;
   const weather = useWeather([source.city])[source.city.id];
   const overlap = bestOverlap(conv.rows);
+  const [editingSource, setEditingSource] = useState(false);
   const [adding, setAdding] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Show the year only when planning outside the current one.
+  const sameYear = conv.date.slice(0, 4) === String(new Date().getFullYear());
+  const dateLabel = sameYear ? `${source.fmt.weekday}, ${source.fmt.date}` : fmtDate(conv.date);
 
   // Copy a self-contained meeting link for the current cities (source first).
   async function share() {
@@ -68,7 +86,7 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
   return (
     <div className="w-full px-6 py-10 text-fg">
       {/* hero */}
-      <div className="mb-10 text-center">
+      <div className="mb-12 text-center">
         <button
           onClick={conv.goLive}
           disabled={conv.live}
@@ -94,8 +112,40 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
           />
         </div>
 
-        <div className="mt-2 text-muted">
-          {source.city.city} · {source.fmt.weekday}, {source.fmt.date}
+        {/* source city · date — both editable in place */}
+        <div className="mt-2 flex min-h-8 flex-wrap items-center justify-center gap-x-2 text-muted">
+          {editingSource ? (
+            <div className="w-44 text-left">
+              <CitySearch
+                placeholder="Search a city…"
+                excludeKeys={[cityKey(source.city)]}
+                onPick={(c) => {
+                  conv.changeSource(c);
+                  setEditingSource(false);
+                }}
+                onDismiss={() => setEditingSource(false)}
+                autoFocus
+                dark
+              />
+            </div>
+          ) : (
+            <button onClick={() => setEditingSource(true)} className={editable} title="Change city">
+              {source.city.city}
+            </button>
+          )}
+          <span aria-hidden="true">·</span>
+          <label className={`relative cursor-pointer ${editable}`} title="Change date">
+            {dateLabel}
+            <input
+              type="date"
+              value={conv.date}
+              onChange={(e) => conv.setDate(e.target.value)}
+              // Open the picker on any click, not only on the (hidden) icon.
+              onClick={(e) => e.currentTarget.showPicker?.()}
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label="Date"
+            />
+          </label>
         </div>
         {weather && (
           <div className="mt-1 text-sm text-muted-soft">
@@ -103,66 +153,53 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
           </div>
         )}
 
-        {/* quick controls */}
-        <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-2 text-sm">
-          <div className="w-44">
-            <CitySearch
-              placeholder={`From: ${source.city.city}`}
-              excludeKeys={[cityKey(source.city)]}
-              onPick={conv.changeSource}
-              dark
-            />
+        {/* settings: clock format + share, as plain text buttons */}
+        <div className="mt-5 flex items-center justify-center gap-4 text-sm">
+          <div className="flex gap-3" role="group" aria-label="Clock format">
+            {[false, true].map((h12) => (
+              <button
+                key={String(h12)}
+                onClick={() => conv.setHour12(h12)}
+                aria-pressed={conv.hour12 === h12}
+                className={
+                  conv.hour12 === h12
+                    ? "font-medium text-fg"
+                    : "text-muted-soft transition hover:text-muted"
+                }
+              >
+                {h12 ? "12h" : "24h"}
+              </button>
+            ))}
           </div>
-          <div className="relative">
-            <div className="font-mono-slab rounded-lg border border-line bg-panel px-3 py-2 text-fg">
-              {fmtDate(conv.date)}
-            </div>
-            <input
-              type="date"
-              value={conv.date}
-              onChange={(e) => conv.setDate(e.target.value)}
-              className="absolute inset-0 cursor-pointer opacity-0"
-              aria-label="Date"
-            />
-          </div>
-          <button
-            onClick={() => conv.setHour12(!conv.hour12)}
-            className="rounded-lg bg-accent px-3 py-2 font-medium text-bg transition hover:bg-accent-strong"
-            title="Toggle 12/24-hour"
-          >
-            {conv.hour12 ? "12h" : "24h"}
-          </button>
+          <span className="h-4 w-px bg-line" aria-hidden="true" />
           <button
             onClick={share}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2 font-medium text-fg transition hover:border-accent hover:text-accent"
+            className="inline-flex items-center gap-1.5 text-muted transition hover:text-accent"
             title="Copy a link that opens these cities"
           >
-            <span aria-hidden="true">{copied ? "✓" : "🔗"}</span>
+            {copied ? <span aria-hidden="true">✓</span> : <LinkIcon />}
             {copied ? "Link copied" : "Share"}
           </button>
         </div>
       </div>
 
-      {/* best overlap suggestion */}
+      {/* planner group */}
       <button
         onClick={() => conv.pickInstant(new Date(conv.sourceDayStart.getTime() + overlap.hour * 3_600_000))}
-        className="mb-8 flex w-full items-center gap-2 rounded-2xl border border-line bg-panel-soft px-5 py-3.5 text-left text-sm text-muted transition hover:border-line-strong"
+        className="mb-5 flex items-center gap-2 text-left text-sm text-muted transition hover:text-fg"
+        title="Plan the meeting at this hour"
       >
-        <span className="h-2 w-2 shrink-0 rounded-full bg-accent" />
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
         <span>
           Best overlap{" "}
           <span className="font-mono-slab text-accent-strong">
             {pad(overlap.hour)}:00–{pad((overlap.hour + 1) % 24)}:00
           </span>{" "}
-          — {overlap.count} of {conv.rows.length} cities in working hours
+          · {overlap.count} of {conv.rows.length} cities in working hours
         </span>
       </button>
 
-      {/* planner timeline */}
-      <MeetingTimeline conv={conv} />
-
-      {/* add city */}
-      <div className="mt-10 flex flex-col items-center gap-2">
+      <MeetingTimeline conv={conv}>
         {adding ? (
           <div className="w-60">
             <CitySearch
@@ -172,20 +209,20 @@ export function ConverterPanel({ conv }: { conv: Converter }) {
                 conv.addTarget(c);
                 setAdding(false);
               }}
+              onDismiss={() => setAdding(false)}
+              autoFocus
               dark
             />
           </div>
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex h-14 w-14 items-center justify-center rounded-full border border-line text-2xl leading-none text-accent-strong transition hover:border-accent hover:text-accent"
-            title="Add a city"
+            className="text-sm text-accent transition hover:text-accent-strong"
           >
-            +
+            + Add city
           </button>
         )}
-        <span className="text-xs font-medium text-accent">Add city</span>
-      </div>
+      </MeetingTimeline>
     </div>
   );
 }

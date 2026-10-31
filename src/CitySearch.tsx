@@ -5,15 +5,21 @@ import { searchCities } from "./geocode.ts";
 // City search. Bundled cities show instantly (and work offline); typing 2+
 // chars also queries Open-Meteo for any city worldwide. Results merge, dedupe
 // by coordinate, and exclude cities already in use.
+// `onDismiss` fires on Escape or a click outside, so a caller that opens the
+// search in place (hero city, "Add city") can close it again.
 export function CitySearch({
   placeholder,
   excludeKeys,
   onPick,
+  onDismiss,
+  autoFocus = false,
   dark = false,
 }: {
   placeholder: string;
   excludeKeys: string[];
   onPick: (city: City) => void;
+  onDismiss?: () => void;
+  autoFocus?: boolean;
   dark?: boolean;
 }) {
   const [q, setQ] = useState("");
@@ -66,9 +72,15 @@ export function CitySearch({
     return out;
   }, [local, remote, excluded]);
 
+  // Read through a ref, so an inline `onDismiss` doesn't re-subscribe each render.
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
   useEffect(() => {
     function onDoc(e: MouseEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        dismissRef.current?.();
+      }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -111,8 +123,10 @@ export function CitySearch({
             choose(matches[active]);
           } else if (e.key === "Escape") {
             setOpen(false);
+            onDismiss?.();
           }
         }}
+        autoFocus={autoFocus}
         className={`w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none ${field}`}
       />
       {open && (matches.length > 0 || loading) && (
