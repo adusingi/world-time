@@ -10,8 +10,10 @@ with a "best overlap" suggestion, live weather, and switchable themes.
 
 ## Features
 
-- ⌚ **World-time dial** — a "world timer" watch face: your city at 12 o'clock, every
-  other city around the ring, a turning 24 h ring with day/night and working hours.
+- ⌚ **World-time dial** — a "world timer" watch face: a map of Earth seen from above
+  the North Pole with a live night shadow, your city at 12 o'clock, every city on its
+  own ray, 24 reference cities (yours take their place), and a turning 24 h ring with
+  day/night and working hours.
   The crown is the mode switch: click it out to plan, then drag the ring or turn the
   crown; click it back in to return to now.
 - 🌍 **Rotating 3D globe** (Dial ⇄ Globe toggle) with great-circle arcs from the
@@ -68,8 +70,9 @@ public/              Static assets (world country polygons for the globe)
 src/
   WorldTime.tsx      Two-column shell (dial or globe | converter + footer)
   ViewToggle.tsx     Dial ⇄ Globe toggle (choice persists)
-  WorldDial.tsx      World-time watch dial (+ dialModel.ts, useDialInput.ts,
-                     useDialMotion.ts)
+  WorldDial.tsx      World-time watch dial (+ DialParts.tsx, DialMap.tsx,
+                     dialModel.ts, dialMap.ts, referenceCities.ts,
+                     useDialInput.ts, useDialMotion.ts)
   GlobeView.tsx      react-globe.gl globe, arcs, theme-aware accent
   ConverterPanel.tsx Hero clock, controls, best-overlap, add-city
   MeetingTimeline.tsx Working-hour timeline with now/planned lines

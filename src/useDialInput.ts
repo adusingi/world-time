@@ -94,9 +94,9 @@ export function useDialInput(conv: Converter) {
     } else {
       g.turned += wrap180(p.angle - g.last);
       g.last = p.angle;
-      // The ring turns backwards through the day: dragging it clockwise by one
-      // hour-step (15°) goes back one hour.
-      pinIfNew(g, snap(g.from - (g.turned / 15) * 3_600_000));
+      // The ring turns clockwise through the day: dragging it clockwise by one
+      // hour-step (15°) goes one hour later.
+      pinIfNew(g, snap(g.from + (g.turned / 15) * 3_600_000));
     }
   }
 

@@ -163,6 +163,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   width: max-content;
 }
 
+/* World-time dial map: land and night tones. Dark themes need a stronger
+   shadow to show at all; on the light themes the same shadow would be a blot. */
+:root {
+  --dial-land: color-mix(in srgb, var(--muted) 30%, var(--panel-soft));
+  --dial-night: rgb(0 0 0 / 0.45);
+}
+html[data-theme="catppuccin-latte"],
+html[data-theme="solarized-light"],
+html[data-theme="rose-pine-dawn"],
+html[data-theme="paper"] {
+  --dial-land: color-mix(in srgb, var(--muted-soft) 40%, var(--panel-soft));
+  --dial-night: rgb(15 23 42 / 0.14);
+}
+
 /* World-time dial: the crown jumps outwards when someone tries to set the time
    while it is pushed in ("pull me first"). */
 @keyframes dial-crown-nudge {
